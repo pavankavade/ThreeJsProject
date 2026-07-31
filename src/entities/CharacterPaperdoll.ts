@@ -39,49 +39,48 @@ export class CharacterPaperdoll {
     this.loadRiggedCharacterModel();
   }
 
+  private actions: Map<string, THREE.AnimationAction> = new Map();
+  private currentActionName: string = '';
+
   private loadRiggedCharacterModel(): void {
     const loader = new GLTFLoader();
 
     loader.load(
-      '/models/soldier.glb',
+      '/models/character.glb',
       (gltf) => {
         const model = gltf.scene;
 
-        console.log('[CharacterPaperdoll] Soldier model loaded. Animations:', gltf.animations.map(a => a.name));
+        console.log('[CharacterPaperdoll] Character mannequin model loaded. Animations:', gltf.animations.map(a => a.name));
 
-        // Compute exact bounding box of the loaded model to automatically fit & center it
+        // Compute exact bounding box of the loaded model to fit & center cleanly
         const box = new THREE.Box3().setFromObject(model);
         const size = new THREE.Vector3();
         box.getSize(size);
         const center = new THREE.Vector3();
         box.getCenter(center);
 
-        // Target height of 1.6 units in paperdoll viewport
-        const targetHeight = 1.6;
+        // Target height of 1.65 units
+        const targetHeight = 1.65;
         const maxDim = Math.max(size.x, size.y, size.z);
         const scaleFactor = targetHeight / (size.y > 0 ? size.y : (maxDim > 0 ? maxDim : 1));
 
         model.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-        // Rotate model to face forward towards the camera
         model.rotation.y = Math.PI;
 
-        // Shift model so its full body (helmet to boots) sits perfectly centered in canvas
         model.position.x = -center.x * scaleFactor;
-        model.position.y = -center.y * scaleFactor + 0.15;
+        model.position.y = -center.y * scaleFactor + 0.12;
         model.position.z = -center.z * scaleFactor;
 
-        // Enhance materials & disable frustum culling to prevent culling issues
         model.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             const mesh = child as THREE.Mesh;
-            mesh.frustumCulled = false; // Prevent skinned mesh culling
+            mesh.frustumCulled = false;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             if (mesh.material) {
               const mat = mesh.material as THREE.MeshStandardMaterial;
-              mat.roughness = 0.55;
-              mat.metalness = 0.4;
+              mat.roughness = 0.5;
+              mat.metalness = 0.2;
               mat.side = THREE.DoubleSide;
             }
           }
@@ -94,13 +93,16 @@ export class CharacterPaperdoll {
           if ((name.includes('lefthand') || name.includes('hand_l') || name.includes('hand.l') || name.includes('palm.l') || name.includes('lowerarm.l') || name.includes('mixamoriglefthand')) && !this.handLBone) this.handLBone = child;
         });
 
-        // Set up skeletal animation mixer if clips exist
+        // Set up skeletal animation mixer & store action clips
         if (gltf.animations && gltf.animations.length > 0) {
           this.mixer = new THREE.AnimationMixer(model);
-          // Play Idle animation clip
-          const idleClip = gltf.animations.find(a => a.name.toLowerCase().includes('idle')) || gltf.animations[0];
-          const action = this.mixer.clipAction(idleClip);
-          action.play();
+          gltf.animations.forEach(clip => {
+            const action = this.mixer!.clipAction(clip);
+            this.actions.set(clip.name.toLowerCase(), action);
+          });
+
+          // Play default idle animation
+          this.playAnimation('idle');
         }
 
         this.loadedModelGroup = model;
@@ -116,6 +118,36 @@ export class CharacterPaperdoll {
         this.buildProceduralFallback();
       }
     );
+  }
+
+  public playAnimation(name: string): void {
+    if (!this.mixer || this.actions.size === 0) return;
+    const targetKey = name.toLowerCase();
+    if (this.currentActionName === targetKey) return;
+
+    // Find matching action clip (or fallback clip)
+    let targetAction = this.actions.get(targetKey);
+    if (!targetAction) {
+      // Find clip containing key string (e.g. 'walk', 'run', 'idle')
+      for (const [k, act] of this.actions.entries()) {
+        if (k.includes(targetKey)) {
+          targetAction = act;
+          break;
+        }
+      }
+    }
+
+    if (!targetAction) {
+      targetAction = Array.from(this.actions.values())[0];
+    }
+
+    if (this.currentActionName && this.actions.has(this.currentActionName)) {
+      const prevAction = this.actions.get(this.currentActionName)!;
+      prevAction.fadeOut(0.2);
+    }
+
+    targetAction.reset().fadeIn(0.2).play();
+    this.currentActionName = targetKey;
   }
 
   private attachEquipmentToModel(): void {

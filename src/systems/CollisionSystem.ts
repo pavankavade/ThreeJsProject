@@ -58,12 +58,21 @@ export class CollisionSystem {
   }
 
   public raycastWallDistance(origin: THREE.Vector3, dir: THREE.Vector3, maxDist: number): number {
-    const step = 0.1;
-    for (let d = 0.1; d <= maxDist; d += step) {
+    const step = 0.15;
+    const halfTile = DungeonMap.TILE_SIZE / 2;
+    for (let d = 0.4; d <= maxDist; d += step) {
       const testX = origin.x + dir.x * d;
       const testZ = origin.z + dir.z * d;
-      if (this.map.isWallAtWorld(testX, testZ, 0.25)) {
-        return d;
+
+      const col = Math.floor((testX + halfTile) / DungeonMap.TILE_SIZE);
+      const row = Math.floor((testZ + halfTile) / DungeonMap.TILE_SIZE);
+
+      if (row >= 0 && row < this.map.gridHeight && col >= 0 && col < this.map.gridWidth) {
+        if (this.map.grid[row][col] === 'W') {
+          return Math.max(0.5, d - 0.2);
+        }
+      } else {
+        return Math.max(0.5, d - 0.2);
       }
     }
     return maxDist;

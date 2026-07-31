@@ -433,12 +433,25 @@ export class Player extends Entity {
       }
     }
 
+    // Update 3D character motion animations (walk, run, idle, airborne)
+    if (!this.isGrounded) {
+      this.worldCharacter.playAnimation('sad_pose');
+    } else if (moveDir.lengthSq() > 0) {
+      if (this.input.isKeyDown('ShiftLeft')) {
+        this.worldCharacter.playAnimation('run');
+      } else {
+        this.worldCharacter.playAnimation('walk');
+      }
+    } else {
+      this.worldCharacter.playAnimation('idle');
+    }
+
     // Camera positioning based on view mode (1st Person vs 3rd Person)
     if (this.isThirdPerson) {
-      // Over-the-shoulder 3rd Person View: position camera behind player's right shoulder
+      // 3rd Person View: position camera behind player with wall raycasting
       const smoothPitch = Math.max(-0.35, Math.min(0.4, this.pitch * 0.4));
       const desiredDist = 2.4;
-      const rawOffset = new THREE.Vector3(0.4, 0.45, desiredDist);
+      const rawOffset = new THREE.Vector3(0, 0.4, desiredDist);
       rawOffset.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
 
       const headPos = this.transform.position.clone();
@@ -456,10 +469,10 @@ export class Player extends Entity {
       const lookTarget = this.transform.position.clone().add(new THREE.Vector3(0, 0.15, 0));
       this.camera.lookAt(lookTarget);
 
-      // Position & rotate 3D world character mesh to face forward
+      // Position & rotate 3D world character mesh to face movement direction
       if (this.mesh) {
         this.mesh.position.copy(this.transform.position);
-        this.mesh.rotation.y = this.yaw + Math.PI;
+        this.mesh.rotation.y = this.yaw;
       }
     } else {
       // 1st Person View: position camera at eye level
