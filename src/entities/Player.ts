@@ -444,43 +444,44 @@ export class Player extends Entity {
       }
     } else {
       this.worldCharacter.playAnimation('idle');
-      // Camera positioning based on view mode (1st Person vs 3rd Person)
-      if (this.isThirdPerson) {
-        // Cinematic Sekiro-style Over-the-Shoulder 3rd Person Camera (elevated, right shoulder offset)
-        const smoothPitch = Math.max(-0.25, Math.min(0.45, this.pitch * 0.5));
-        const desiredDist = 2.8;
-        const rawOffset = new THREE.Vector3(0.5, 0.7, desiredDist);
-        rawOffset.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
+    }
 
-        const headPos = this.transform.position.clone();
-        const rayDir = rawOffset.clone().normalize();
-        const maxDist = rawOffset.length();
+    // Camera positioning based on view mode (1st Person vs 3rd Person)
+    if (this.isThirdPerson) {
+      // Cinematic Sekiro-style Over-the-Shoulder 3rd Person Camera (elevated, right shoulder offset)
+      const smoothPitch = Math.max(-0.25, Math.min(0.45, this.pitch * 0.5));
+      const desiredDist = 2.8;
+      const rawOffset = new THREE.Vector3(0.5, 0.7, desiredDist);
+      rawOffset.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
 
-        // Wall collision raycasting to prevent camera clipping inside dungeon walls
-        const hitDist = this.collision.raycastWallDistance(headPos, rayDir, maxDist);
-        const safeDist = Math.max(0.7, hitDist - 0.25);
+      const headPos = this.transform.position.clone();
+      const rayDir = rawOffset.clone().normalize();
+      const maxDist = rawOffset.length();
 
-        const safeOffset = rayDir.multiplyScalar(safeDist);
-        this.camera.position.copy(headPos).add(safeOffset);
+      // Wall collision raycasting to prevent camera clipping inside dungeon walls
+      const hitDist = this.collision.raycastWallDistance(headPos, rayDir, maxDist);
+      const safeDist = Math.max(0.7, hitDist - 0.25);
 
-        // Target lookAt point: upper chest / head target horizon
-        const lookTarget = this.transform.position.clone().add(new THREE.Vector3(0, 0.35, 0));
-        this.camera.lookAt(lookTarget);
+      const safeOffset = rayDir.multiplyScalar(safeDist);
+      this.camera.position.copy(headPos).add(safeOffset);
 
-        // Position & rotate 3D world character mesh to face movement direction
-        if (this.mesh) {
-          this.mesh.position.copy(this.transform.position);
-          this.mesh.rotation.y = this.yaw;
-        }
-      } else {
-        // 1st Person View: position camera at eye level
-        this.camera.position.copy(this.transform.position);
-        this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
+      // Target lookAt point: upper chest / head target horizon
+      const lookTarget = this.transform.position.clone().add(new THREE.Vector3(0, 0.35, 0));
+      this.camera.lookAt(lookTarget);
 
-        if (this.mesh) {
-          this.mesh.position.copy(this.transform.position);
-          this.mesh.rotation.y = this.yaw;
-        }
+      // Position & rotate 3D world character mesh to face movement direction
+      if (this.mesh) {
+        this.mesh.position.copy(this.transform.position);
+        this.mesh.rotation.y = this.yaw;
+      }
+    } else {
+      // 1st Person View: position camera at eye level
+      this.camera.position.copy(this.transform.position);
+      this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
+
+      if (this.mesh) {
+        this.mesh.position.copy(this.transform.position);
+        this.mesh.rotation.y = this.yaw;
       }
     }
 

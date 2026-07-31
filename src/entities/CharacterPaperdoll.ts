@@ -68,7 +68,7 @@ export class CharacterPaperdoll {
         model.rotation.y = Math.PI;
 
         model.position.x = -center.x * scaleFactor;
-        model.position.y = -center.y * scaleFactor + 0.12;
+        model.position.y = -box.min.y * scaleFactor; // Ground soles of boots exactly at Y = 0
         model.position.z = -center.z * scaleFactor;
 
         model.traverse((child) => {
@@ -85,12 +85,20 @@ export class CharacterPaperdoll {
             }
           }
 
-          // Locate attach bones for gear
+          // Locate attach bones for gear (strictly match hand wrist bones, excluding fingers)
           const name = child.name.toLowerCase();
-          if ((name.includes('head') || name === 'head') && !this.headBone) this.headBone = child;
+          if ((name.includes('head') || name.endsWith('head')) && !this.headBone) this.headBone = child;
           if ((name.includes('chest') || name.includes('spine') || name.includes('torso')) && !this.chestBone) this.chestBone = child;
-          if ((name.includes('righthand') || name.includes('hand_r') || name.includes('hand.r') || name.includes('palm.r') || name.includes('lowerarm.r') || name.includes('mixamorigrighthand')) && !this.handRBone) this.handRBone = child;
-          if ((name.includes('lefthand') || name.includes('hand_l') || name.includes('hand.l') || name.includes('palm.l') || name.includes('lowerarm.l') || name.includes('mixamoriglefthand')) && !this.handLBone) this.handLBone = child;
+
+          if (!this.handRBone && (name === 'mixamorig:righthand' || name.endsWith('righthand') || name.endsWith('hand_r') || name.endsWith('hand.r')) && !name.includes('pinky') && !name.includes('thumb') && !name.includes('index') && !name.includes('middle') && !name.includes('ring')) {
+            this.handRBone = child;
+            console.log('[CharacterPaperdoll] Matched Right Hand Bone:', child.name);
+          }
+
+          if (!this.handLBone && (name === 'mixamorig:lefthand' || name.endsWith('lefthand') || name.endsWith('hand_l') || name.endsWith('hand.l')) && !name.includes('pinky') && !name.includes('thumb') && !name.includes('index') && !name.includes('middle') && !name.includes('ring')) {
+            this.handLBone = child;
+            console.log('[CharacterPaperdoll] Matched Left Hand Bone:', child.name);
+          }
         });
 
         // Set up skeletal animation mixer & store action clips
