@@ -279,7 +279,16 @@ export class Player extends Entity {
 
     if (moveDir.lengthSq() > 0) {
       moveDir.normalize();
-      moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+      
+      // Compute movement angle (in 3rd person, match camera's actual line-of-sight for 100% straight W movement)
+      let moveYaw = this.yaw;
+      if (this.isThirdPerson) {
+        const camDir = new THREE.Vector3();
+        this.camera.getWorldDirection(camDir);
+        moveYaw = Math.atan2(-camDir.x, -camDir.z);
+      }
+
+      moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), moveYaw);
 
       this.transform.position.x += moveDir.x * speed * delta;
       this.transform.position.z += moveDir.z * speed * delta;
