@@ -68,7 +68,7 @@ export class CharacterPaperdoll {
         model.rotation.y = Math.PI;
 
         model.position.x = -center.x * scaleFactor;
-        model.position.y = -box.min.y * scaleFactor; // Ground soles of boots exactly at Y = 0
+        model.position.y = -center.y * scaleFactor - 0.08; // Align mannequin perfectly centered from head to boots
         model.position.z = -center.z * scaleFactor;
 
         model.traverse((child) => {
@@ -326,7 +326,7 @@ export class CharacterPaperdoll {
       pommel.position.set(0, -0.2, 0);
 
       this.weaponGroup.add(blade, guard, handle, pommel);
-      this.weaponGroup.scale.set(1.5, 1.5, 1.5);
+      this.weaponGroup.scale.set(1.1, 1.1, 1.1);
       this.weaponGroup.position.set(0, 0.05, 0.05);
       this.weaponGroup.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
     }
@@ -357,8 +357,8 @@ export class CharacterPaperdoll {
       boss.position.set(0, 0.05, 0.04);
 
       this.shieldGroup.add(shieldMesh, rim, boss);
-      this.shieldGroup.scale.set(1.4, 1.4, 1.4);
-      this.shieldGroup.position.set(-0.05, 0, 0.1);
+      this.shieldGroup.scale.set(1.0, 1.0, 1.0);
+      this.shieldGroup.position.set(0, 0.05, 0.05);
       this.shieldGroup.rotation.set(0, Math.PI / 2, 0);
     }
   }

@@ -82,7 +82,7 @@ export class Player extends Entity {
     // 3D World Character Mesh Container (for 3rd Person View)
     this.mesh = new THREE.Group();
     this.worldCharacter = new CharacterPaperdoll(this.equipment);
-    this.worldCharacter.group.position.set(0, -this.defaultEyeHeight + 0.22, 0);
+    this.worldCharacter.group.position.set(0, -this.defaultEyeHeight + 0.82, 0);
     this.mesh.add(this.worldCharacter.group);
     this.worldCharacter.group.visible = false; // Hidden in 1st person mode
 
