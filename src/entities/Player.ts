@@ -392,6 +392,10 @@ export class Player extends Entity {
     this.camera.position.copy(this.transform.position);
   }
 
+  // Mouse steering accumulator for dynamic swing tracking
+  private mouseSwingX: number = 0;
+  private mouseSwingY: number = 0;
+
   private handleCombat(delta: number, enemies: CollisionTarget[]): void {
     if (this.equipment.activeSlot !== 1 && this.equipment.activeSlot !== 2) return;
 
@@ -400,8 +404,14 @@ export class Player extends Entity {
       this.attackCooldown -= delta;
     }
 
-    // Combo reset timer - if window expires without another click, reset combo
-    if (!this.isAttacking && this.comboStep > 0) {
+    // Accumulate & decay mouse movement steering during swings
+    if (this.input.isPointerLocked()) {
+      this.mouseSwingX = THREE.MathUtils.lerp(this.mouseSwingX, this.input.mouseDeltaX * 0.0015, delta * 12);
+      this.mouseSwingY = THREE.MathUtils.lerp(this.mouseSwingY, this.input.mouseDeltaY * 0.0015, delta * 12);
+    }
+
+    // Combo reset timer - if window expires without another click/hold, reset combo to 0
+    if (!this.isAttacking && this.comboStep > 0 && !this.input.isMouseDownLeft) {
       this.comboResetTimer -= delta;
       if (this.comboResetTimer <= 0) {
         this.comboStep = 0;
@@ -409,20 +419,23 @@ export class Player extends Entity {
       }
     }
 
-    // Queue a swing if player clicks during an active swing (for combo chaining)
+    // Queue a swing if player clicks during an active swing
     if (this.input.attackRequested && this.isAttacking && !this.comboQueued) {
       this.comboQueued = true;
     }
 
-    // Start a new swing
+    // Start a new swing:
+    // 1. Single click (attackRequested)
+    // 2. Click queued during previous swing (comboQueued)
+    // 3. Holding left mouse button down (isMouseDownLeft)
     const canStartSwing = !this.isAttacking && this.attackCooldown <= 0 && this.stamina >= 15;
-    const wantsToSwing = this.input.attackRequested || this.comboQueued;
+    const wantsToSwing = this.input.attackRequested || this.comboQueued || (this.input.isMouseDownLeft && !this.isAttacking);
 
     if (wantsToSwing && canStartSwing) {
       this.isAttacking = true;
       this.attackProgress = 0;
       this.comboQueued = false;
-      this.stamina -= 15;
+      this.stamina = Math.max(0, this.stamina - 15);
       EventBus.emit('PLAYER_STAMINA_CHANGE', { current: this.stamina, max: this.maxStamina });
       EventBus.emit('PLAYER_ATTACK_SWING');
 
@@ -440,10 +453,7 @@ export class Player extends Entity {
 
     // Animate the active swing
     if (this.isAttacking) {
-      this.attackProgress += delta * this.swingSpeed;
-
-      // Mouse influence - swing tracks slight mouse movement
-      const mouseInfluence = this.input.mouseDeltaX * 0.0008;
+      this.attackProgress += delta * this.swingSpeed; // Smooth, readable, impactful swing speed
 
       if (this.attackProgress >= 1.0) {
         // Swing finished
@@ -451,50 +461,53 @@ export class Player extends Entity {
         this.swordMesh.position.copy(this.swordRestPos);
         this.swordMesh.rotation.copy(this.swordRestRot);
 
-        // Advance combo
+        // Advance combo step (0: R->L, 1: L->R, 2: Up->Down)
         this.comboStep = (this.comboStep + 1) % 3;
 
-        if (this.comboStep === 0) {
-          // Combo finished (all 3 swings done), longer recovery
-          this.attackCooldown = 0.7;
+        if (this.comboStep === 0 || !this.input.isMouseDownLeft) {
+          // If 3-hit combo completed OR mouse was released (single click), reset combo
+          if (!this.input.isMouseDownLeft) {
+            this.comboStep = 0;
+          }
+          this.attackCooldown = 0.45; // Recovery window after full combo or single swing
           this.comboResetTimer = 0;
         } else {
-          // Mid-combo, short cooldown, start combo window timer
-          this.attackCooldown = 0.12;
+          // Mid-combo hold: brief transition pause before next swing
+          this.attackCooldown = 0.08;
           this.comboResetTimer = this.comboWindowDuration;
         }
       } else {
-        // Progress bell curve (smooth ease in-out)
+        // Progress bell curve (smooth ease in-out arc)
         const t = Math.sin(this.attackProgress * Math.PI);
 
         if (this.comboStep === 0) {
           // ── Swing 1: Right → Left horizontal slash ──
-          this.swordMesh.position.x = 0.55 - t * 0.7 + mouseInfluence;
-          this.swordMesh.position.y = -0.3 + t * 0.05;
-          this.swordMesh.position.z = -0.5 + t * 0.15;
-          this.swordMesh.rotation.z = -t * 1.2;
-          this.swordMesh.rotation.y = -0.3 - t * 0.6;
-          this.swordMesh.rotation.x = 0.2;
+          this.swordMesh.position.x = 0.5 - t * 0.75 + this.mouseSwingX;
+          this.swordMesh.position.y = -0.28 + Math.sin(this.attackProgress * Math.PI * 0.8) * 0.12 + this.mouseSwingY;
+          this.swordMesh.position.z = -0.45 + t * 0.15;
+          this.swordMesh.rotation.z = -t * 1.3;
+          this.swordMesh.rotation.y = -0.3 - t * 0.7;
+          this.swordMesh.rotation.x = 0.15 + t * 0.2;
         } else if (this.comboStep === 1) {
           // ── Swing 2: Left → Right horizontal slash ──
-          this.swordMesh.position.x = -0.2 + t * 0.7 + mouseInfluence;
-          this.swordMesh.position.y = -0.3 + t * 0.05;
-          this.swordMesh.position.z = -0.5 + t * 0.15;
-          this.swordMesh.rotation.z = t * 1.2;
-          this.swordMesh.rotation.y = -0.3 + t * 0.6;
-          this.swordMesh.rotation.x = 0.2;
+          this.swordMesh.position.x = -0.25 + t * 0.75 + this.mouseSwingX;
+          this.swordMesh.position.y = -0.28 + Math.sin(this.attackProgress * Math.PI * 0.8) * 0.12 + this.mouseSwingY;
+          this.swordMesh.position.z = -0.45 + t * 0.15;
+          this.swordMesh.rotation.z = t * 1.3;
+          this.swordMesh.rotation.y = -0.3 + t * 0.7;
+          this.swordMesh.rotation.x = 0.15 + t * 0.2;
         } else {
           // ── Swing 3: Overhead vertical chop (Up → Down) ──
-          this.swordMesh.position.x = 0.35 + mouseInfluence;
-          this.swordMesh.position.y = -0.3 + (1 - t) * 0.55;
-          this.swordMesh.position.z = -0.5 + t * 0.25;
-          this.swordMesh.rotation.x = 0.2 + (1 - t) * 1.5;
-          this.swordMesh.rotation.z = 0;
-          this.swordMesh.rotation.y = -0.3;
+          this.swordMesh.position.x = 0.2 + this.mouseSwingX;
+          this.swordMesh.position.y = -0.25 + (1 - t) * 0.5 + this.mouseSwingY;
+          this.swordMesh.position.z = -0.45 + t * 0.25;
+          this.swordMesh.rotation.x = 0.2 + (1 - t) * 1.6;
+          this.swordMesh.rotation.z = -0.2 * (1 - t);
+          this.swordMesh.rotation.y = -0.2;
         }
       }
     } else {
-      // Not attacking: lerp sword back to rest position
+      // Not attacking: lerp sword smoothly back to rest position
       this.swordMesh.position.lerp(this.swordRestPos, delta * 8);
       this.swordMesh.rotation.x = THREE.MathUtils.lerp(this.swordMesh.rotation.x, this.swordRestRot.x, delta * 8);
       this.swordMesh.rotation.y = THREE.MathUtils.lerp(this.swordMesh.rotation.y, this.swordRestRot.y, delta * 8);
