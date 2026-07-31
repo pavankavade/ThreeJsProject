@@ -145,7 +145,7 @@ canvas {
 }
 
 .hud-equip-slot.active {
-  border-color: #00f0ff;
+  border-color: #d4a848;
   background: rgba(0, 240, 255, 0.12);
   box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
 }
@@ -310,7 +310,7 @@ canvas {
 }
 
 .hud-armor-slot-card:hover {
-  border-color: #00f0ff;
+  border-color: #d4a848;
   background: #161c28;
 }
 
@@ -438,7 +438,7 @@ canvas {
 }
 
 .hud-inventory-slot:hover {
-  border-color: #00f0ff;
+  border-color: #d4a848;
   background: #1a202c;
 }
 
@@ -473,7 +473,7 @@ canvas {
 }
 
 .hud-stat-card:hover {
-  border-color: #00f0ff;
+  border-color: #d4a848;
   box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
   transform: translateY(-1px);
 }

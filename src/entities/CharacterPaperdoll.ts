@@ -46,8 +46,15 @@ export class CharacterPaperdoll {
       '/models/knight.glb',
       (gltf) => {
         const model = gltf.scene;
-        model.scale.set(0.8, 0.8, 0.8);
-        model.position.set(0, -0.65, 0);
+
+        // Debug: log the full model tree to verify correct asset loaded
+        console.log('[CharacterPaperdoll] Knight model loaded. Animations:', gltf.animations.map(a => a.name));
+        model.traverse((child) => {
+          console.log(`  Node: "${child.name}" type=${child.type}`);
+        });
+
+        model.scale.set(0.95, 0.95, 0.95);
+        model.position.set(0, -0.85, 0);
 
         // Enhance materials for dark fantasy aesthetic
         model.traverse((child) => {
@@ -56,22 +63,24 @@ export class CharacterPaperdoll {
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             if (mesh.material) {
-              (mesh.material as THREE.MeshStandardMaterial).roughness = 0.6;
+              const mat = mesh.material as THREE.MeshStandardMaterial;
+              mat.roughness = 0.5;
+              mat.metalness = 0.6;
             }
           }
 
           // Locate attach bones for gear
           const name = child.name.toLowerCase();
-          if (name.includes('head') && !this.headBone) this.headBone = child;
+          if ((name.includes('head') || name === 'head') && !this.headBone) this.headBone = child;
           if ((name.includes('chest') || name.includes('spine') || name.includes('torso')) && !this.chestBone) this.chestBone = child;
-          if ((name.includes('righthand') || name.includes('hand_r') || name.includes('mixamorigrighthand')) && !this.handRBone) this.handRBone = child;
-          if ((name.includes('lefthand') || name.includes('hand_l') || name.includes('mixamoriglefthand')) && !this.handLBone) this.handLBone = child;
+          if ((name.includes('righthand') || name.includes('hand_r') || name.includes('hand.r') || name.includes('palm.r') || name.includes('lowerarm.r') || name.includes('mixamorigrighthand')) && !this.handRBone) this.handRBone = child;
+          if ((name.includes('lefthand') || name.includes('hand_l') || name.includes('hand.l') || name.includes('palm.l') || name.includes('lowerarm.l') || name.includes('mixamoriglefthand')) && !this.handLBone) this.handLBone = child;
         });
 
         // Set up skeletal animation mixer if clips exist
         if (gltf.animations && gltf.animations.length > 0) {
           this.mixer = new THREE.AnimationMixer(model);
-          // Play Idle animation clip (usually index 0 or 1)
+          // Play Idle animation clip
           const idleClip = gltf.animations.find(a => a.name.toLowerCase().includes('idle')) || gltf.animations[0];
           const action = this.mixer.clipAction(idleClip);
           action.play();
@@ -122,6 +131,17 @@ export class CharacterPaperdoll {
   }
 
   public updateArmorVisuals(): void {
+    if (this.loadedModelGroup) {
+      // Clean 3D GLTF Knight model - do not spawn geometric block primitives over the body
+      this.headArmorGroup.clear();
+      this.chestArmorGroup.clear();
+      this.legsArmorGroup.clear();
+      this.bootsArmorGroup.clear();
+      this.glovesArmorGroup.clear();
+      this.buildWeaponAndShield();
+      return;
+    }
+
     this.buildHeadArmor();
     this.buildChestArmor();
     this.buildLegsArmor();

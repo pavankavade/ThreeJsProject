@@ -117,15 +117,18 @@ export class EquipmentUI {
 
     this.paperdollScene = new THREE.Scene();
     this.paperdollCamera = new THREE.PerspectiveCamera(40, 220 / 320, 0.1, 10);
-    this.paperdollCamera.position.set(0, 0.2, 2.7);
+    this.paperdollCamera.position.set(0, 0.05, 2.6);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
-    const dirLight = new THREE.DirectionalLight(0x00f0ff, 2.0);
+    // Warm medieval torchlight ambiance
+    const ambientLight = new THREE.AmbientLight(0xffeedd, 1.2);
+    const dirLight = new THREE.DirectionalLight(0xffc87a, 2.5);
     dirLight.position.set(2, 4, 3);
-    const backLight = new THREE.DirectionalLight(0xffaa00, 1.2);
+    const backLight = new THREE.DirectionalLight(0xcc8844, 1.0);
     backLight.position.set(-2, 2, -3);
+    const fillLight = new THREE.DirectionalLight(0xfff5e6, 0.6);
+    fillLight.position.set(0, 1, 4);
 
-    this.paperdollScene.add(ambientLight, dirLight, backLight);
+    this.paperdollScene.add(ambientLight, dirLight, backLight, fillLight);
 
     this.paperdollModel = new CharacterPaperdoll(this.equipment);
     this.paperdollScene.add(this.paperdollModel.group);
