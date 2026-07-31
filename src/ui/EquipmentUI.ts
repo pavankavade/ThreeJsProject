@@ -1,9 +1,9 @@
-import { DarkAndDarkerEquipment } from '../systems/DarkAndDarkerEquipment';
+import { EquipmentSystem } from '../systems/EquipmentSystem';
 import { EventBus } from '../core/EventBus';
 
-export class DarkAndDarkerUI {
+export class EquipmentUI {
   private parent: HTMLElement;
-  private equipment: DarkAndDarkerEquipment;
+  private equipment: EquipmentSystem;
   private beltBarContainer!: HTMLElement;
   private modalOverlay!: HTMLElement;
   private gridContainer!: HTMLElement;
@@ -11,7 +11,7 @@ export class DarkAndDarkerUI {
   private actionProgressBar!: HTMLElement;
   private actionProgressFill!: HTMLElement;
 
-  constructor(parent: HTMLElement, equipment: DarkAndDarkerEquipment) {
+  constructor(parent: HTMLElement, equipment: EquipmentSystem) {
     this.parent = parent;
     this.equipment = equipment;
 
@@ -21,9 +21,9 @@ export class DarkAndDarkerUI {
   }
 
   private buildUI(): void {
-    // 1. Dark and Darker Hotbar (Bottom Center)
+    // 1. Tactical Equipment Hotbar (Bottom Center)
     this.beltBarContainer = document.createElement('div');
-    this.beltBarContainer.className = 'hud-dad-hotbar';
+    this.beltBarContainer.className = 'hud-equip-hotbar';
     this.parent.appendChild(this.beltBarContainer);
 
     // 2. Action Progress Bar (Consumable drinking/bandaging)
@@ -46,22 +46,22 @@ export class DarkAndDarkerUI {
 
     // 3. Full Character Equipment & Stash Modal (Tab Key)
     this.modalOverlay = document.createElement('div');
-    this.modalOverlay.className = 'hud-dad-modal hidden';
+    this.modalOverlay.className = 'hud-equip-modal hidden';
 
     const card = document.createElement('div');
-    card.className = 'hud-dad-card';
+    card.className = 'hud-equip-card';
 
     const header = document.createElement('div');
-    header.className = 'hud-dad-header';
+    header.className = 'hud-equip-header';
     header.textContent = 'EQUIPMENT & INVENTORY STASH';
     card.appendChild(header);
 
     this.gridContainer = document.createElement('div');
-    this.gridContainer.className = 'hud-dad-grid';
+    this.gridContainer.className = 'hud-equip-grid';
     card.appendChild(this.gridContainer);
 
     const hint = document.createElement('div');
-    hint.className = 'hud-dad-hint';
+    hint.className = 'hud-equip-hint';
     hint.textContent = 'Press 1: Weapon | 2: Shield | 3: Cycle Potions | 4: Cycle Bandages | TAB: Close';
     card.appendChild(hint);
 
@@ -75,7 +75,6 @@ export class DarkAndDarkerUI {
   }
 
   public toggle(): void {
-    this.equipment.stash; // Read stash
     const isCurrentlyOpen = !this.modalOverlay.classList.contains('hidden');
     if (isCurrentlyOpen) {
       this.modalOverlay.classList.add('hidden');
@@ -96,7 +95,6 @@ export class DarkAndDarkerUI {
   }
 
   public render(): void {
-    // Render 4-slot Dark and Darker Belt (1, 2, 3, 4)
     this.beltBarContainer.replaceChildren();
 
     // Slot 1: Primary Weapon
@@ -105,12 +103,12 @@ export class DarkAndDarkerUI {
     // Slot 2: Secondary Weapon / Shield
     const slot2 = this.createBeltSlotElement('2', 'OFFHAND', this.equipment.weapon2, this.equipment.activeSlot === 2, null);
 
-    // Slot 3: Potions (Shows current active potion out of 3)
+    // Slot 3: Potions
     const activePotion = this.equipment.belt1[this.equipment.belt1Index];
     const potionCountText = `(3x: #${this.equipment.belt1Index + 1})`;
     const slot3 = this.createBeltSlotElement('3', 'POTIONS', activePotion, this.equipment.activeSlot === 3, potionCountText);
 
-    // Slot 4: Bandages (Shows current active bandage out of 3)
+    // Slot 4: Bandages
     const activeBandage = this.equipment.belt2[this.equipment.belt2Index];
     const bandageCountText = `(3x: #${this.equipment.belt2Index + 1})`;
     const slot4 = this.createBeltSlotElement('4', 'BANDAGES', activeBandage, this.equipment.activeSlot === 4, bandageCountText);
@@ -124,17 +122,16 @@ export class DarkAndDarkerUI {
     if (!this.modalOverlay.classList.contains('hidden')) {
       this.gridContainer.replaceChildren();
 
-      // Paperdoll Equipment slots
       const equipSection = document.createElement('div');
-      equipSection.className = 'hud-dad-section';
+      equipSection.className = 'hud-equip-section';
 
       const title = document.createElement('div');
-      title.className = 'hud-dad-section-title';
+      title.className = 'hud-equip-section-title';
       title.textContent = 'Character Equipment';
       equipSection.appendChild(title);
 
       const slotsRow = document.createElement('div');
-      slotsRow.className = 'hud-dad-equip-row';
+      slotsRow.className = 'hud-equip-equip-row';
       slotsRow.appendChild(this.createEquipSlotCard('Primary Weapon [1]', this.equipment.weapon1));
       slotsRow.appendChild(this.createEquipSlotCard('Offhand / Shield [2]', this.equipment.weapon2));
       slotsRow.appendChild(this.createEquipSlotCard('Potions Belt [3]', activePotion));
@@ -143,17 +140,16 @@ export class DarkAndDarkerUI {
 
       this.gridContainer.appendChild(equipSection);
 
-      // Stash Section
       const stashSection = document.createElement('div');
-      stashSection.className = 'hud-dad-section';
+      stashSection.className = 'hud-equip-section';
 
       const stashTitle = document.createElement('div');
-      stashTitle.className = 'hud-dad-section-title';
+      stashTitle.className = 'hud-equip-section-title';
       stashTitle.textContent = 'Loot Stash Storage (16 Slots)';
       stashSection.appendChild(stashTitle);
 
       const stashGrid = document.createElement('div');
-      stashGrid.className = 'hud-dad-stash-grid';
+      stashGrid.className = 'hud-equip-stash-grid';
       this.equipment.stash.forEach((item) => {
         const slotEl = this.createStashSlotElement(item);
         stashGrid.appendChild(slotEl);
@@ -172,28 +168,28 @@ export class DarkAndDarkerUI {
     subtext: string | null
   ): HTMLElement {
     const slotEl = document.createElement('div');
-    slotEl.className = `hud-dad-slot ${isActive ? 'active' : ''}`;
+    slotEl.className = `hud-equip-slot ${isActive ? 'active' : ''}`;
 
     const keyBadge = document.createElement('div');
-    keyBadge.className = 'hud-dad-keybadge';
+    keyBadge.className = 'hud-equip-keybadge';
     keyBadge.textContent = keyLabel;
     slotEl.appendChild(keyBadge);
 
     const title = document.createElement('div');
-    title.className = 'hud-dad-slottitle';
+    title.className = 'hud-equip-slottitle';
     title.textContent = slotTitle;
     slotEl.appendChild(title);
 
     if (item) {
       const icon = document.createElement('div');
-      icon.className = 'hud-dad-icon';
+      icon.className = 'hud-equip-icon';
       if (item.name.includes('Bandage')) icon.textContent = '🩹';
       else if (item.name.includes('Potion') || item.name.includes('Elixir')) icon.textContent = '🧪';
       else if (item.type === 'WEAPON') icon.textContent = '⚔️';
       else icon.textContent = '🛡️';
 
       const name = document.createElement('div');
-      name.className = 'hud-dad-name';
+      name.className = 'hud-equip-name';
       name.textContent = item.name;
 
       slotEl.appendChild(icon);
@@ -203,14 +199,14 @@ export class DarkAndDarkerUI {
       slotEl.addEventListener('mouseleave', () => this.hideTooltip());
     } else {
       const empty = document.createElement('div');
-      empty.className = 'hud-dad-empty';
+      empty.className = 'hud-equip-empty';
       empty.textContent = '[ Empty ]';
       slotEl.appendChild(empty);
     }
 
     if (subtext) {
       const sub = document.createElement('div');
-      sub.className = 'hud-dad-subtext';
+      sub.className = 'hud-equip-subtext';
       sub.textContent = subtext;
       slotEl.appendChild(sub);
     }
@@ -220,21 +216,21 @@ export class DarkAndDarkerUI {
 
   private createEquipSlotCard(label: string, item: any): HTMLElement {
     const card = document.createElement('div');
-    card.className = 'hud-dad-card-slot';
+    card.className = 'hud-equip-card-slot';
 
     const lbl = document.createElement('div');
-    lbl.className = 'hud-dad-card-label';
+    lbl.className = 'hud-equip-card-label';
     lbl.textContent = label;
     card.appendChild(lbl);
 
     if (item) {
       const val = document.createElement('div');
-      val.className = 'hud-dad-card-val';
+      val.className = 'hud-equip-card-val';
       val.textContent = `${item.name} (${item.description})`;
       card.appendChild(val);
     } else {
       const val = document.createElement('div');
-      val.className = 'hud-dad-card-empty';
+      val.className = 'hud-equip-card-empty';
       val.textContent = 'Empty Slot';
       card.appendChild(val);
     }

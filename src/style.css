@@ -111,8 +111,8 @@ canvas {
   transition: width 0.05s linear;
 }
 
-/* --- Dark and Darker Hotbar (4-Slot Belt: 1, 2, 3, 4) --- */
-.hud-dad-hotbar {
+/* --- Tactical Equipment Hotbar (4-Slot Belt: 1, 2, 3, 4) --- */
+.hud-equip-hotbar {
   position: absolute;
   bottom: 24px;
   left: 50%;
@@ -128,7 +128,7 @@ canvas {
   pointer-events: auto;
 }
 
-.hud-dad-slot {
+.hud-equip-slot {
   width: 90px;
   height: 75px;
   background: #11141e;
@@ -144,13 +144,13 @@ canvas {
   transition: all 0.15s ease;
 }
 
-.hud-dad-slot.active {
+.hud-equip-slot.active {
   border-color: #00f0ff;
   background: rgba(0, 240, 255, 0.12);
   box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
 }
 
-.hud-dad-keybadge {
+.hud-equip-keybadge {
   position: absolute;
   top: 4px;
   left: 6px;
@@ -162,7 +162,7 @@ canvas {
   border-radius: 4px;
 }
 
-.hud-dad-slottitle {
+.hud-equip-slottitle {
   font-size: 0.65rem;
   font-weight: 700;
   color: #a0aec0;
@@ -170,12 +170,12 @@ canvas {
   margin-top: 10px;
 }
 
-.hud-dad-icon {
+.hud-equip-icon {
   font-size: 1.2rem;
   margin-top: 2px;
 }
 
-.hud-dad-name {
+.hud-equip-name {
   font-size: 0.68rem;
   font-weight: 600;
   color: #e2e8f0;
@@ -186,20 +186,20 @@ canvas {
   max-width: 82px;
 }
 
-.hud-dad-empty {
+.hud-equip-empty {
   font-size: 0.7rem;
   color: #4a5568;
   margin-top: 6px;
 }
 
-.hud-dad-subtext {
+.hud-equip-subtext {
   font-size: 0.62rem;
   color: #ecc94b;
   margin-top: 1px;
 }
 
-/* --- Dark and Darker Inventory Sheet Modal --- */
-.hud-dad-modal {
+/* --- Equipment Sheet Modal --- */
+.hud-equip-modal {
   position: absolute;
   top: 0;
   left: 0;
@@ -214,7 +214,7 @@ canvas {
   z-index: 90;
 }
 
-.hud-dad-card {
+.hud-equip-card {
   width: 620px;
   background: #141722;
   border: 3px solid #00f0ff;
@@ -223,7 +223,7 @@ canvas {
   box-shadow: 0 0 35px rgba(0, 240, 255, 0.3);
 }
 
-.hud-dad-header {
+.hud-equip-header {
   font-family: 'Cinzel', serif;
   font-size: 1.5rem;
   font-weight: 800;
@@ -233,13 +233,13 @@ canvas {
   margin-bottom: 20px;
 }
 
-.hud-dad-grid {
+.hud-equip-grid {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.hud-dad-section-title {
+.hud-equip-section-title {
   font-size: 0.85rem;
   font-weight: 700;
   color: #a0aec0;
@@ -247,44 +247,67 @@ canvas {
   margin-bottom: 8px;
 }
 
-.hud-dad-equip-row {
+.hud-equip-equip-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
-.hud-dad-card-slot {
+.hud-equip-card-slot {
   background: #0d1017;
   border: 1px solid #2d3748;
   border-radius: 8px;
   padding: 10px 14px;
 }
 
-.hud-dad-card-label {
+.hud-equip-card-label {
   font-size: 0.75rem;
   color: #00f0ff;
   font-weight: 700;
 }
 
-.hud-dad-card-val {
+.hud-equip-card-val {
   font-size: 0.85rem;
   color: #e2e8f0;
   margin-top: 2px;
 }
 
-.hud-dad-card-empty {
+.hud-equip-card-empty {
   font-size: 0.85rem;
   color: #4a5568;
   margin-top: 2px;
 }
 
-.hud-dad-stash-grid {
+.hud-equip-stash-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 8px;
 }
 
-.hud-dad-hint {
+.hud-inventory-slot {
+  width: 48px;
+  height: 48px;
+  background: #0f1117;
+  border: 2px solid #2d3748;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-inventory-slot:hover {
+  border-color: #00f0ff;
+  background: #1a202c;
+}
+
+.hud-item-icon {
+  font-size: 1.4rem;
+}
+
+.hud-equip-hint {
   margin-top: 16px;
   font-size: 0.8rem;
   color: #718096;
@@ -425,7 +448,7 @@ canvas {
 
 .hud-fullmap-legend i {
   display: inline-block;
-  width: 10px;
+  width: 100px;
   height: 10px;
   border-radius: 50%;
 }

@@ -3,7 +3,7 @@ import type { LootItem } from '../entities/Chest';
 
 export type ActiveSlotType = 1 | 2 | 3 | 4;
 
-export class DarkAndDarkerEquipment {
+export class EquipmentSystem {
   // Slot 1: Primary Weapon
   public weapon1: LootItem | null = {
     name: "Iron Longsword",
@@ -20,7 +20,7 @@ export class DarkAndDarkerEquipment {
     value: 10
   };
 
-  // Slot 3: Belt 1 (Potions) - Stores up to 3 potions!
+  // Slot 3: Belt 1 (Potions) - Stores up to 3 potions
   public belt1: (LootItem | null)[] = [
     { name: "Health Elixir", type: 'HEALTH', description: "Restores 50 HP", value: 50 },
     { name: "Greater Healing Potion", type: 'HEALTH', description: "Restores 100 HP", value: 100 },
@@ -28,7 +28,7 @@ export class DarkAndDarkerEquipment {
   ];
   public belt1Index: number = 0;
 
-  // Slot 4: Belt 2 (Bandages) - Stores up to 3 bandages / pouches!
+  // Slot 4: Belt 2 (Bandages) - Stores up to 3 bandages / pouches
   public belt2: (LootItem | null)[] = [
     { name: "Linen Bandage", type: 'HEALTH', description: "Restores 35 HP", value: 35 },
     { name: "Heavy Bandage", type: 'HEALTH', description: "Restores 60 HP", value: 60 },
@@ -51,13 +51,11 @@ export class DarkAndDarkerEquipment {
   public selectSlot(slotNum: ActiveSlotType): void {
     if (slotNum === 3) {
       if (this.activeSlot === 3) {
-        // Pressing 3 repeatedly cycles through available potions in Belt 1!
         this.cycleBelt1();
       }
       this.activeSlot = 3;
     } else if (slotNum === 4) {
       if (this.activeSlot === 4) {
-        // Pressing 4 repeatedly cycles through available bandages in Belt 2!
         this.cycleBelt2();
       }
       this.activeSlot = 4;
@@ -69,7 +67,6 @@ export class DarkAndDarkerEquipment {
   }
 
   public cycleBelt1(): void {
-    // Cycle to next non-null or next slot index
     this.belt1Index = (this.belt1Index + 1) % 3;
     EventBus.emit('EQUIPMENT_CHANGED');
   }
@@ -90,7 +87,6 @@ export class DarkAndDarkerEquipment {
   public consumeActiveConsumable(): void {
     if (this.activeSlot === 3) {
       this.belt1[this.belt1Index] = null;
-      // Cycle to next available item in belt 1
       for (let i = 0; i < 3; i++) {
         const nextIdx = (this.belt1Index + i) % 3;
         if (this.belt1[nextIdx] !== null) {
@@ -112,15 +108,13 @@ export class DarkAndDarkerEquipment {
   }
 
   public autoStoreLoot(item: LootItem): void {
-    // 1. If weapon and weapon1 is empty -> Equip
     if (item.type === 'WEAPON' && !this.weapon1) {
       this.weapon1 = item;
       EventBus.emit('EQUIPMENT_CHANGED');
       return;
     }
 
-    // 2. If potion -> Add to Belt 1 empty slot
-    if (item.type === 'HEALTH' && item.name.includes('Potion') || item.name.includes('Elixir')) {
+    if (item.type === 'HEALTH' && (item.name.includes('Potion') || item.name.includes('Elixir'))) {
       for (let i = 0; i < 3; i++) {
         if (!this.belt1[i]) {
           this.belt1[i] = item;
@@ -130,7 +124,6 @@ export class DarkAndDarkerEquipment {
       }
     }
 
-    // 3. If bandage -> Add to Belt 2 empty slot
     if (item.type === 'HEALTH' && item.name.includes('Bandage')) {
       for (let i = 0; i < 3; i++) {
         if (!this.belt2[i]) {
@@ -141,7 +134,6 @@ export class DarkAndDarkerEquipment {
       }
     }
 
-    // 4. Fallback: Add to Stash
     for (let i = 0; i < this.stash.length; i++) {
       if (!this.stash[i]) {
         this.stash[i] = item;

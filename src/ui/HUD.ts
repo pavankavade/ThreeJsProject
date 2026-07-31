@@ -2,8 +2,8 @@ import { EventBus } from '../core/EventBus';
 import type { LootItem } from '../entities/Chest';
 import { Minimap } from './Minimap';
 import { FullMapUI } from './FullMapUI';
-import { DarkAndDarkerEquipment } from '../systems/DarkAndDarkerEquipment';
-import { DarkAndDarkerUI } from './DarkAndDarkerUI';
+import { EquipmentSystem } from '../systems/EquipmentSystem';
+import { EquipmentUI } from './EquipmentUI';
 
 export class HUD {
   private container: HTMLElement;
@@ -20,15 +20,15 @@ export class HUD {
 
   public minimap!: Minimap;
   public fullMapUI!: FullMapUI;
-  public dadUI!: DarkAndDarkerUI;
+  public equipUI!: EquipmentUI;
 
-  constructor(equipment: DarkAndDarkerEquipment) {
+  constructor(equipment: EquipmentSystem) {
     this.container = document.body;
     this.buildUI(equipment);
     this.registerEvents();
   }
 
-  private buildUI(equipment: DarkAndDarkerEquipment): void {
+  private buildUI(equipment: EquipmentSystem): void {
     // --- HUD Root Wrapper ---
     const hudRoot = document.createElement('div');
     hudRoot.className = 'hud-root';
@@ -89,8 +89,8 @@ export class HUD {
     // --- Full Map Overlay Modal ---
     this.fullMapUI = new FullMapUI(hudRoot);
 
-    // --- Dark and Darker Equipment & Belt UI ---
-    this.dadUI = new DarkAndDarkerUI(hudRoot, equipment);
+    // --- Tactical Equipment & Belt UI ---
+    this.equipUI = new EquipmentUI(hudRoot, equipment);
 
     // --- Loot Notification Banner ---
     this.lootNotification = document.createElement('div');
@@ -114,7 +114,7 @@ export class HUD {
     startCard.appendChild(title);
 
     const desc = document.createElement('p');
-    desc.textContent = 'Dark and Darker style combat. Equip weapons, cycle potions/bandages on your belt, and escape!';
+    desc.textContent = 'First-person tactical dungeon crawler. Equip weapons, cycle potions & bandages on your belt, and escape!';
     startCard.appendChild(desc);
 
     const controls = document.createElement('div');

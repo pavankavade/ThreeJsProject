@@ -146,7 +146,7 @@ export class Engine {
   };
 
   private updateGame(delta: number, elapsedTime: number): void {
-    // 0. Dark and Darker Slot Selection (Keys 1, 2, 3, 4)
+    // Slot Selection (Keys 1, 2, 3, 4)
     if (this.input.slotKey1Pressed) this.player.equipment.selectSlot(1);
     if (this.input.slotKey2Pressed) this.player.equipment.selectSlot(2);
     if (this.input.slotKey3Pressed) this.player.equipment.selectSlot(3);
@@ -164,15 +164,15 @@ export class Engine {
 
     // Handle Inventory Toggle (Tab Key)
     if (this.input.inventoryToggleRequested) {
-      this.hud.dadUI.toggle();
+      this.hud.equipUI.toggle();
       this.input.exitPointerLock();
     }
 
     // Update Action Progress Bar when drinking potion / bandaging
     if (this.player.isUsingConsumable) {
-      this.hud.dadUI.showProgress(this.player.consumableProgress / 1.4);
+      this.hud.equipUI.showProgress(this.player.consumableProgress / 1.4);
     } else {
-      this.hud.dadUI.showProgress(0);
+      this.hud.equipUI.showProgress(0);
     }
 
     // Pause player movement & combat updates while Full Map, Victory, or Death is active!
@@ -182,7 +182,6 @@ export class Engine {
       this.player.health.isDead;
 
     if (!isUIModalOpen) {
-      // 1. Prepare skeleton collision targets for player attack
       const enemyTargets: CollisionTarget[] = this.skeletons
         .filter((s) => s.state !== 5 /* SkeletonAIState.DEAD */)
         .map((s) => ({
@@ -192,20 +191,16 @@ export class Engine {
           takeDamage: (amt) => s.takeDamage(amt)
         }));
 
-      // 2. Update Player
       this.player.updatePlayer(delta, enemyTargets);
 
-      // 3. Update Skeleton Enemies AI with wall collision solver
       this.skeletons.forEach((skeleton) => {
         skeleton.updateAI(delta, this.player.transform.position, this.collision, (dmg) => {
           this.player.damagePlayer(dmg);
         });
       });
 
-      // 4. Update Chests & Interaction Raycasting
       this.updateChestInteraction();
 
-      // 5. Check Exit Portal reach condition
       if (this.map.exitPosition && !this.isDungeonCleared) {
         const distToExit = this.player.transform.position.distanceTo(this.map.exitPosition);
         if (distToExit < 2.0) {
@@ -218,11 +213,9 @@ export class Engine {
 
     this.chests.forEach((c) => c.update(delta));
 
-    // 6. Update Particle System & Wall Torches Flickering
     this.particles.update(delta);
     this.map.updateTorches(elapsedTime);
 
-    // 7. Render Minimap & Full Map
     this.hud.minimap.render(
       this.map,
       this.player.transform.position,

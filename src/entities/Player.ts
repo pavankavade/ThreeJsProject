@@ -5,7 +5,7 @@ import { InputManager } from '../core/Input';
 import { EventBus } from '../core/EventBus';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import type { CollisionTarget } from '../systems/CollisionSystem';
-import { DarkAndDarkerEquipment } from '../systems/DarkAndDarkerEquipment';
+import { EquipmentSystem } from '../systems/EquipmentSystem';
 
 export class Player extends Entity {
   public camera: THREE.PerspectiveCamera;
@@ -14,7 +14,7 @@ export class Player extends Entity {
   public maxStamina: number = 100;
   public attackPower: number = 25;
 
-  public equipment: DarkAndDarkerEquipment;
+  public equipment: EquipmentSystem;
 
   private input: InputManager;
   private collision: CollisionSystem;
@@ -55,7 +55,7 @@ export class Player extends Entity {
     this.collision = collision;
 
     this.health = new HealthComponent(100);
-    this.equipment = new DarkAndDarkerEquipment();
+    this.equipment = new EquipmentSystem();
     this.transform.position.set(0, this.defaultEyeHeight, 0);
 
     this.viewmodelGroup = new THREE.Group();
@@ -126,14 +126,12 @@ export class Player extends Entity {
 
       if (activeItem) {
         if (activeItem.name.includes('Bandage')) {
-          // Render Roll of Bandage
           const clothMat = new THREE.MeshStandardMaterial({ color: 0xdedeeb, roughness: 0.8 });
           const rollGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.15, 12);
           const roll = new THREE.Mesh(rollGeo, clothMat);
           roll.rotation.z = Math.PI / 2;
           this.potionMesh.add(roll);
         } else {
-          // Render Potion Flask
           const glassMat = new THREE.MeshStandardMaterial({ color: 0x2288ff, roughness: 0.1, metalness: 0.8, transparent: true, opacity: 0.8 });
           const fluidMat = new THREE.MeshBasicMaterial({ color: 0xee2200 });
 
@@ -256,11 +254,9 @@ export class Player extends Entity {
       this.transform.position.x += moveDir.x * speed * delta;
       this.transform.position.z += moveDir.z * speed * delta;
 
-      // Wall collision resolution
       this.collision.resolveWallCollision(this.transform.position, 0.4);
     }
 
-    // Jump logic
     if (this.input.jumpRequested && this.isGrounded && this.stamina >= 10) {
       this.velocityY = this.jumpForce;
       this.isGrounded = false;
@@ -268,7 +264,6 @@ export class Player extends Entity {
       EventBus.emit('PLAYER_STAMINA_CHANGE', { current: this.stamina, max: this.maxStamina });
     }
 
-    // Apply gravity
     if (!this.isGrounded) {
       this.velocityY += this.gravity * delta;
       this.transform.position.y += this.velocityY * delta;
@@ -279,7 +274,6 @@ export class Player extends Entity {
         this.isGrounded = true;
       }
     } else {
-      // Head bobbing when grounded
       if (moveDir.lengthSq() > 0) {
         this.headBobTimer += delta * speed * 3.0;
         this.transform.position.y = this.defaultEyeHeight + Math.sin(this.headBobTimer) * 0.05;
@@ -292,14 +286,12 @@ export class Player extends Entity {
   }
 
   private handleCombat(delta: number, enemies: CollisionTarget[]): void {
-    // Only attack/block when holding Weapon / Shield (Slots 1 & 2)
     if (this.equipment.activeSlot !== 1 && this.equipment.activeSlot !== 2) return;
 
     if (this.attackCooldown > 0) {
       this.attackCooldown -= delta;
     }
 
-    // Trigger Attack
     if (this.input.attackRequested && !this.isAttacking && this.attackCooldown <= 0 && this.stamina >= 15) {
       this.isAttacking = true;
       this.attackProgress = 0;
@@ -308,7 +300,6 @@ export class Player extends Entity {
       EventBus.emit('PLAYER_STAMINA_CHANGE', { current: this.stamina, max: this.maxStamina });
       EventBus.emit('PLAYER_ATTACK_SWING');
 
-      // Check hit enemies in arc
       const camDir = new THREE.Vector3();
       this.camera.getWorldDirection(camDir);
       const hitEnemies = this.collision.getEntitiesInArc(this.transform.position, camDir, 2.4, 80, enemies);
@@ -320,7 +311,6 @@ export class Player extends Entity {
       });
     }
 
-    // Animate Sword Swing
     if (this.isAttacking) {
       this.attackProgress += delta * 4.0;
       if (this.attackProgress >= 1.0) {
@@ -336,7 +326,6 @@ export class Player extends Entity {
       }
     }
 
-    // Animate Shield Blocking
     const targetShieldPos = this.input.isBlocking
       ? new THREE.Vector3(-0.1, -0.2, -0.35)
       : new THREE.Vector3(-0.4, -0.35, -0.45);
@@ -355,7 +344,6 @@ export class Player extends Entity {
   }
 
   private handleConsumables(delta: number): void {
-    // Only process consumable drinking/bandaging when in Belt Slot 3 or 4
     if (this.equipment.activeSlot !== 3 && this.equipment.activeSlot !== 4) {
       this.isUsingConsumable = false;
       this.consumableProgress = 0;
@@ -369,18 +357,15 @@ export class Player extends Entity {
       return;
     }
 
-    // Holding LMB triggers drinking / bandaging timer
     if (this.input.isKeyDown('MouseLeft') || this.input.attackRequested) {
       this.isUsingConsumable = true;
       this.consumableProgress += delta;
 
-      // Animate Potion/Bandage bringing up to mouth/chest
       const tilt = Math.sin((this.consumableProgress / this.consumableDuration) * Math.PI);
       this.potionMesh.position.y = -0.35 + tilt * 0.15;
       this.potionMesh.rotation.x = 0.3 + tilt * 0.4;
 
       if (this.consumableProgress >= this.consumableDuration) {
-        // Complete Drinking / Bandaging!
         this.isUsingConsumable = false;
         this.consumableProgress = 0;
 
@@ -409,9 +394,8 @@ export class Player extends Entity {
 
     let finalDamage = rawAmount;
 
-    // Shield mitigation
     if (this.input.isBlocking && this.stamina >= 10 && this.equipment.activeSlot <= 2) {
-      finalDamage = Math.floor(rawAmount * 0.15); // 85% block reduction
+      finalDamage = Math.floor(rawAmount * 0.15);
       this.stamina = Math.max(0, this.stamina - 15);
       EventBus.emit('PLAYER_STAMINA_CHANGE', { current: this.stamina, max: this.maxStamina });
     }
