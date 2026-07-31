@@ -53,19 +53,37 @@ export class CharacterPaperdoll {
           console.log(`  Node: "${child.name}" type=${child.type}`);
         });
 
-        model.scale.set(0.95, 0.95, 0.95);
-        model.position.set(0, -0.85, 0);
+        // Compute exact bounding box of the loaded model to automatically fit & center it
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
 
-        // Enhance materials for dark fantasy aesthetic
+        // Target height of 1.55 units in paperdoll viewport
+        const targetHeight = 1.55;
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scaleFactor = targetHeight / (size.y > 0 ? size.y : (maxDim > 0 ? maxDim : 1));
+
+        model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+        // Shift model so its bounding center sits perfectly at Y = -0.10 in canvas
+        model.position.x = -center.x * scaleFactor;
+        model.position.y = -center.y * scaleFactor - 0.10;
+        model.position.z = -center.z * scaleFactor;
+
+        // Enhance materials & disable frustum culling to prevent culling issues
         model.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             const mesh = child as THREE.Mesh;
+            mesh.frustumCulled = false; // Prevent skinned mesh culling
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             if (mesh.material) {
               const mat = mesh.material as THREE.MeshStandardMaterial;
-              mat.roughness = 0.5;
-              mat.metalness = 0.6;
+              mat.roughness = 0.55;
+              mat.metalness = 0.4;
+              mat.side = THREE.DoubleSide;
             }
           }
 
