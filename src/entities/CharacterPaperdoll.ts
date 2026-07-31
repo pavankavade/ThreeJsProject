@@ -15,6 +15,12 @@ export class CharacterPaperdoll {
   private handRBone: THREE.Object3D | null = null;
   private handLBone: THREE.Object3D | null = null;
 
+  // Arm & Forearm Bones for Ready Combat Stance Posing
+  private rightArmBone: THREE.Object3D | null = null;
+  private rightForeArmBone: THREE.Object3D | null = null;
+  private leftArmBone: THREE.Object3D | null = null;
+  private leftForeArmBone: THREE.Object3D | null = null;
+
   // Armor Overlay Container Groups
   private headArmorGroup: THREE.Group;
   private chestArmorGroup: THREE.Group;
@@ -90,6 +96,11 @@ export class CharacterPaperdoll {
           if ((name.includes('head') || name.endsWith('head')) && !this.headBone) this.headBone = child;
           if ((name.includes('chest') || name.includes('spine') || name.includes('torso')) && !this.chestBone) this.chestBone = child;
 
+          if (name === 'mixamorig:rightarm' || name.endsWith('rightarm')) this.rightArmBone = child;
+          if (name === 'mixamorig:rightforearm' || name.endsWith('rightforearm')) this.rightForeArmBone = child;
+          if (name === 'mixamorig:leftarm' || name.endsWith('leftarm')) this.leftArmBone = child;
+          if (name === 'mixamorig:leftforearm' || name.endsWith('leftforearm')) this.leftForeArmBone = child;
+
           if (!this.handRBone && (name === 'mixamorig:righthand' || name.endsWith('righthand') || name.endsWith('hand_r') || name.endsWith('hand.r')) && !name.includes('pinky') && !name.includes('thumb') && !name.includes('index') && !name.includes('middle') && !name.includes('ring')) {
             this.handRBone = child;
             console.log('[CharacterPaperdoll] Matched Right Hand Bone:', child.name);
@@ -164,15 +175,16 @@ export class CharacterPaperdoll {
     const parentHead = this.headBone || this.loadedModelGroup;
     const parentChest = this.chestBone || this.loadedModelGroup;
     const parentRightHand = this.handRBone || this.loadedModelGroup;
-    const parentLeftHand = this.handLBone || this.loadedModelGroup;
 
     parentHead.add(this.headArmorGroup);
     parentChest.add(this.chestArmorGroup);
     parentChest.add(this.legsArmorGroup);
     parentChest.add(this.bootsArmorGroup);
     parentRightHand.add(this.glovesArmorGroup);
-    parentRightHand.add(this.weaponGroup);
-    parentLeftHand.add(this.shieldGroup);
+
+    // Attach weapon & shield directly to main group so world position tracking is 100% accurate
+    this.group.add(this.weaponGroup);
+    this.group.add(this.shieldGroup);
   }
 
   private buildProceduralFallback(): void {
@@ -326,10 +338,7 @@ export class CharacterPaperdoll {
       pommel.position.set(0, -0.2, 0);
 
       this.weaponGroup.add(blade, guard, handle, pommel);
-      // Armature bone scale is 0.01 in Three.js, so scale by 110.0 to achieve 1.1m world size
-      this.weaponGroup.scale.set(110.0, 110.0, 110.0);
-      this.weaponGroup.position.set(0, 5.0, 5.0);
-      this.weaponGroup.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
+      this.weaponGroup.scale.set(0.65, 0.65, 0.65);
     }
 
     // Heater Shield in Left Hand
@@ -358,16 +367,53 @@ export class CharacterPaperdoll {
       boss.position.set(0, 0.05, 0.04);
 
       this.shieldGroup.add(shieldMesh, rim, boss);
-      // Armature bone scale is 0.01 in Three.js, so scale by 100.0 to achieve 1.0m world size
-      this.shieldGroup.scale.set(100.0, 100.0, 100.0);
-      this.shieldGroup.position.set(-5.0, 0, 10.0);
-      this.shieldGroup.rotation.set(0, Math.PI / 2, 0);
+      this.shieldGroup.scale.set(0.6, 0.6, 0.6);
     }
   }
 
   public update(delta: number): void {
     if (this.mixer) {
       this.mixer.update(delta);
+    }
+
+    // Override arm bone rotations AFTER mixer update so arms hold sword & shield raised matching 1st person stance
+    if (this.rightArmBone) {
+      this.rightArmBone.rotation.set(-1.2, 0.4, 0.5, 'YXZ');
+    }
+    if (this.rightForeArmBone) {
+      this.rightForeArmBone.rotation.set(0, 0.9, 0, 'YXZ');
+    }
+
+    if (this.leftArmBone) {
+      this.leftArmBone.rotation.set(-1.1, -0.4, -0.4, 'YXZ');
+    }
+    if (this.leftForeArmBone) {
+      this.leftForeArmBone.rotation.set(0, -0.9, 0, 'YXZ');
+    }
+
+    // Dynamic real-time hand bone tracking for 3D Falchion & Heater Shield
+    if (this.handRBone && this.weaponGroup && this.weaponGroup.children.length > 0) {
+      const v = new THREE.Vector3();
+      const q = new THREE.Quaternion();
+      this.handRBone.getWorldPosition(v);
+      this.handRBone.getWorldQuaternion(q);
+
+      this.group.worldToLocal(v);
+      this.weaponGroup.position.copy(v);
+      this.weaponGroup.quaternion.copy(q);
+      this.weaponGroup.rotateX(Math.PI / 2);
+    }
+
+    if (this.handLBone && this.shieldGroup && this.shieldGroup.children.length > 0) {
+      const v = new THREE.Vector3();
+      const q = new THREE.Quaternion();
+      this.handLBone.getWorldPosition(v);
+      this.handLBone.getWorldQuaternion(q);
+
+      this.group.worldToLocal(v);
+      this.shieldGroup.position.copy(v);
+      this.shieldGroup.quaternion.copy(q);
+      this.shieldGroup.rotateY(Math.PI / 2);
     }
   }
 }
