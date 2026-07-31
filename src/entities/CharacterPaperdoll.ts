@@ -326,8 +326,9 @@ export class CharacterPaperdoll {
       pommel.position.set(0, -0.2, 0);
 
       this.weaponGroup.add(blade, guard, handle, pommel);
-      this.weaponGroup.scale.set(1.1, 1.1, 1.1);
-      this.weaponGroup.position.set(0, 0.05, 0.05);
+      // Armature bone scale is 0.01 in Three.js, so scale by 110.0 to achieve 1.1m world size
+      this.weaponGroup.scale.set(110.0, 110.0, 110.0);
+      this.weaponGroup.position.set(0, 5.0, 5.0);
       this.weaponGroup.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
     }
 
@@ -357,8 +358,9 @@ export class CharacterPaperdoll {
       boss.position.set(0, 0.05, 0.04);
 
       this.shieldGroup.add(shieldMesh, rim, boss);
-      this.shieldGroup.scale.set(1.0, 1.0, 1.0);
-      this.shieldGroup.position.set(0, 0.05, 0.05);
+      // Armature bone scale is 0.01 in Three.js, so scale by 100.0 to achieve 1.0m world size
+      this.shieldGroup.scale.set(100.0, 100.0, 100.0);
+      this.shieldGroup.position.set(-5.0, 0, 10.0);
       this.shieldGroup.rotation.set(0, Math.PI / 2, 0);
     }
   }

@@ -47,6 +47,9 @@ export class Engine {
     this.initSystems();
     this.spawnWorldEntities();
 
+    (window as any).gameEngine = this;
+    (window as any).player = this.player;
+
     window.addEventListener('resize', () => this.onWindowResize());
   }
 

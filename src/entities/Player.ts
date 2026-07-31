@@ -362,9 +362,11 @@ export class Player extends Entity {
   public updatePlayer(delta: number, enemies: CollisionTarget[]): void {
     if (this.input.viewToggleRequested) {
       this.isThirdPerson = !this.isThirdPerson;
-      this.viewmodelGroup.visible = !this.isThirdPerson;
-      this.worldCharacter.group.visible = this.isThirdPerson;
     }
+
+    // Always synchronize 1st-person viewmodels vs 3rd-person world character model visibility
+    this.viewmodelGroup.visible = !this.isThirdPerson;
+    this.worldCharacter.group.visible = this.isThirdPerson;
 
     this.health.update(delta);
     this.handleMouseLook();
@@ -448,24 +450,24 @@ export class Player extends Entity {
 
     // Camera positioning based on view mode (1st Person vs 3rd Person)
     if (this.isThirdPerson) {
-      // Cinematic Sekiro-style Over-the-Shoulder 3rd Person Camera (elevated, right shoulder offset)
-      const smoothPitch = Math.max(-0.25, Math.min(0.45, this.pitch * 0.5));
-      const desiredDist = 2.8;
-      const rawOffset = new THREE.Vector3(0.5, 0.7, desiredDist);
+      // Sekiro over-the-right-shoulder 3rd Person camera offset (X = +0.75 for clear right arm & weapon view)
+      const smoothPitch = Math.max(-0.2, Math.min(0.4, this.pitch * 0.4));
+      const desiredDist = 2.6;
+      const rawOffset = new THREE.Vector3(0.75, 0.75, desiredDist);
       rawOffset.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
 
       const headPos = this.transform.position.clone();
       const rayDir = rawOffset.clone().normalize();
       const maxDist = rawOffset.length();
 
-      // Wall collision raycasting to prevent camera clipping inside dungeon walls
+      // Wall collision raycasting
       const hitDist = this.collision.raycastWallDistance(headPos, rayDir, maxDist);
       const safeDist = Math.max(0.7, hitDist - 0.25);
 
       const safeOffset = rayDir.multiplyScalar(safeDist);
       this.camera.position.copy(headPos).add(safeOffset);
 
-      // Target lookAt point: upper chest / head target horizon
+      // Target lookAt point: upper chest / horizon target
       const lookTarget = this.transform.position.clone().add(new THREE.Vector3(0, 0.35, 0));
       this.camera.lookAt(lookTarget);
 
