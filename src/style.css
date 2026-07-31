@@ -254,6 +254,20 @@ canvas {
   box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
   position: relative;
   overflow: hidden;
+  cursor: grab;
+}
+
+.hud-paperdoll-viewport:active {
+  cursor: grabbing;
+}
+
+.hud-rotate-3d-hint {
+  font-size: 0.72rem;
+  color: #00f0ff;
+  margin-top: 6px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 .hud-paperdoll-canvas {

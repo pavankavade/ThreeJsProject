@@ -117,7 +117,7 @@ export class EquipmentUI {
 
     this.paperdollScene = new THREE.Scene();
     this.paperdollCamera = new THREE.PerspectiveCamera(40, 220 / 320, 0.1, 10);
-    this.paperdollCamera.position.set(0, 1.0, 3.2);
+    this.paperdollCamera.position.set(0, 0.2, 2.7);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
     const dirLight = new THREE.DirectionalLight(0x00f0ff, 2.0);
@@ -129,6 +129,27 @@ export class EquipmentUI {
 
     this.paperdollModel = new CharacterPaperdoll(this.equipment);
     this.paperdollScene.add(this.paperdollModel.group);
+
+    // Interactive Drag-to-Rotate (Click and drag mouse to rotate character 360°)
+    let isDragging = false;
+    let previousMouseX = 0;
+
+    this.paperdollCanvas.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      previousMouseX = e.clientX;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging && this.paperdollModel) {
+        const deltaX = e.clientX - previousMouseX;
+        previousMouseX = e.clientX;
+        this.paperdollModel.group.rotation.y += deltaX * 0.015;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
   }
 
   public isOpen: boolean = false;
@@ -252,7 +273,12 @@ export class EquipmentUI {
       totalArmorBanner.textContent = `TOTAL ARMOR: +${this.equipment.getTotalArmorRating()}`;
       paperdollWrapper.appendChild(totalArmorBanner);
 
+      const rotateHint = document.createElement('div');
+      rotateHint.className = 'hud-rotate-3d-hint';
+      rotateHint.textContent = '↔️ Click & Drag to Rotate 360°';
+
       centerColumn.appendChild(paperdollWrapper);
+      centerColumn.appendChild(rotateHint);
       this.gridContainer.appendChild(centerColumn);
 
       // ── Right Column: Attributes & Inventory Stash ──

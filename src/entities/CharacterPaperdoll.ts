@@ -47,7 +47,7 @@ export class CharacterPaperdoll {
       (gltf) => {
         const model = gltf.scene;
         model.scale.set(0.9, 0.9, 0.9);
-        model.position.set(0, -0.9, 0);
+        model.position.set(0, -0.7, 0);
 
         // Enhance materials for dark fantasy aesthetic
         model.traverse((child) => {
@@ -268,8 +268,5 @@ export class CharacterPaperdoll {
     if (this.mixer) {
       this.mixer.update(delta);
     }
-
-    // Slow 360° rotation of character model for inspection
-    this.group.rotation.y += delta * 0.4;
   }
 }
