@@ -113,6 +113,10 @@ export class Engine {
       }
     });
 
+    EventBus.on('GAME_OVER', () => {
+      this.input.exitPointerLock();
+    });
+
     EventBus.on('GAME_START', () => {
       this.input.requestPointerLock();
       this.isRunning = true;
@@ -203,8 +207,12 @@ export class Engine {
       }
     }
 
-    // Pause player movement & combat updates while Inventory or Full Map is open
-    const isUIModalOpen = this.hud.inventorySystem.isOpen || this.hud.fullMapUI.isOpen || this.isDungeonCleared;
+    // Pause player movement & combat updates while Inventory, Full Map, Victory, or Death is active!
+    const isUIModalOpen =
+      this.hud.inventorySystem.isOpen ||
+      this.hud.fullMapUI.isOpen ||
+      this.isDungeonCleared ||
+      this.player.health.isDead;
 
     if (!isUIModalOpen) {
       // 1. Prepare skeleton collision targets for player attack
