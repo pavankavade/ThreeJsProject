@@ -111,12 +111,10 @@ canvas {
   transition: width 0.05s linear;
 }
 
-/* --- Tactical Equipment Hotbar (4-Slot Belt: 1, 2, 3, 4) --- */
+/* --- Tactical Equipment Hotbar (Left & Right Corners: 1, 2 | 3, 4) --- */
 .hud-equip-hotbar {
   position: absolute;
   bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   gap: 12px;
   background: rgba(12, 15, 22, 0.9);
@@ -126,6 +124,14 @@ canvas {
   backdrop-filter: blur(12px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
   pointer-events: auto;
+}
+
+.hud-hotbar-left {
+  left: 24px;
+}
+
+.hud-hotbar-right {
+  right: 24px;
 }
 
 .hud-equip-slot {

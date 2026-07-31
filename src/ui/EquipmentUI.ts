@@ -19,7 +19,8 @@ export class EquipmentUI {
   private equipment: EquipmentSystem;
   private playerStats: PlayerStatsRef | null = null;
   
-  private beltBarContainer!: HTMLElement;
+  private beltBarLeft!: HTMLElement;
+  private beltBarRight!: HTMLElement;
   private modalOverlay!: HTMLElement;
   private gridContainer!: HTMLElement;
   private tooltipEl!: HTMLElement;
@@ -49,10 +50,15 @@ export class EquipmentUI {
   }
 
   private buildUI(): void {
-    // 1. Tactical Equipment Hotbar (Bottom Center)
-    this.beltBarContainer = document.createElement('div');
-    this.beltBarContainer.className = 'hud-equip-hotbar';
-    this.parent.appendChild(this.beltBarContainer);
+    // 1. Tactical Equipment Hotbar - Left Corner (Weapon [1] & Offhand [2])
+    this.beltBarLeft = document.createElement('div');
+    this.beltBarLeft.className = 'hud-equip-hotbar hud-hotbar-left';
+    this.parent.appendChild(this.beltBarLeft);
+
+    // 2. Tactical Equipment Hotbar - Right Corner (Potions [3] & Bandages [4])
+    this.beltBarRight = document.createElement('div');
+    this.beltBarRight.className = 'hud-equip-hotbar hud-hotbar-right';
+    this.parent.appendChild(this.beltBarRight);
 
     // 2. Action Progress Bar (Consumable drinking/bandaging)
     this.actionProgressBar = document.createElement('div');
@@ -204,7 +210,8 @@ export class EquipmentUI {
   }
 
   public render(): void {
-    this.beltBarContainer.replaceChildren();
+    this.beltBarLeft.replaceChildren();
+    this.beltBarRight.replaceChildren();
 
     // Hotbar slots 1-4
     const activePotion = this.equipment.belt1[this.equipment.belt1Index];
@@ -215,10 +222,10 @@ export class EquipmentUI {
     const slot3 = this.createBeltSlotElement('3', 'POTIONS', activePotion, this.equipment.activeSlot === 3, `(#${this.equipment.belt1Index + 1})`);
     const slot4 = this.createBeltSlotElement('4', 'BANDAGES', activeBandage, this.equipment.activeSlot === 4, `(#${this.equipment.belt2Index + 1})`);
 
-    this.beltBarContainer.appendChild(slot1);
-    this.beltBarContainer.appendChild(slot2);
-    this.beltBarContainer.appendChild(slot3);
-    this.beltBarContainer.appendChild(slot4);
+    this.beltBarLeft.appendChild(slot1);
+    this.beltBarLeft.appendChild(slot2);
+    this.beltBarRight.appendChild(slot3);
+    this.beltBarRight.appendChild(slot4);
 
     // Update 3D Paperdoll visual model
     if (this.paperdollModel) {

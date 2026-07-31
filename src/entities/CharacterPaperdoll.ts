@@ -290,7 +290,7 @@ export class CharacterPaperdoll {
     this.weaponGroup.clear();
     this.shieldGroup.clear();
 
-    // Weapon in Right Hand
+    // Weapon in Right Hand (3D Falchion)
     const weapon = this.equipment.weapon1;
     if (weapon) {
       const bladeMat = new THREE.MeshStandardMaterial({ color: 0xddddee, metalness: 0.92, roughness: 0.2 });
@@ -304,32 +304,54 @@ export class CharacterPaperdoll {
       bladeShape.lineTo(-0.035, 0.4);
       bladeShape.quadraticCurveTo(-0.03, 0.2, -0.025, 0);
 
-      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: 0.01 }), bladeMat);
-      blade.position.set(0, 0, 0);
-      blade.rotation.x = -Math.PI / 2;
+      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: 0.012 }), bladeMat);
+      blade.position.set(0, 0.02, -0.006);
 
-      const guard = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.04), guardMat);
-      guard.position.set(0, 0, 0);
+      const guard = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.035, 0.045), guardMat);
+      guard.position.set(0, 0.01, 0);
 
-      this.weaponGroup.add(blade, guard);
+      const handleMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a, roughness: 0.9 });
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.022, 0.18, 8), handleMat);
+      handle.position.set(0, -0.1, 0);
+
+      const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), guardMat);
+      pommel.position.set(0, -0.2, 0);
+
+      this.weaponGroup.add(blade, guard, handle, pommel);
+      this.weaponGroup.scale.set(1.5, 1.5, 1.5);
+      this.weaponGroup.position.set(0, 0.05, 0.05);
+      this.weaponGroup.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
     }
 
     // Heater Shield in Left Hand
     const shield = this.equipment.weapon2;
     if (shield) {
       const shieldShape = new THREE.Shape();
-      const w = 0.18, h = 0.45;
+      const w = 0.2, h = 0.52;
       shieldShape.moveTo(-w, h * 0.5);
       shieldShape.lineTo(w, h * 0.5);
       shieldShape.quadraticCurveTo(w * 1.05, 0, 0, -h * 0.5);
       shieldShape.quadraticCurveTo(-w * 1.05, 0, -w, h * 0.5);
 
       const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d2514, roughness: 0.65 });
-      const shieldMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shieldShape, { depth: 0.03 }), woodMat);
-      shieldMesh.position.set(0, 0, 0.08);
-      shieldMesh.rotation.y = Math.PI / 2;
+      const rimMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.85, roughness: 0.25 });
+      const bossMat = new THREE.MeshStandardMaterial({ color: 0xd4a846, metalness: 0.9, roughness: 0.2 });
 
-      this.shieldGroup.add(shieldMesh);
+      const shieldMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shieldShape, { depth: 0.03 }), woodMat);
+      
+      const rim = new THREE.Mesh(new THREE.ExtrudeGeometry(shieldShape, { depth: 0.035 }), rimMat);
+      rim.scale.set(1.05, 1.05, 1.0);
+      rim.position.set(0, 0, -0.002);
+
+      const bossGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.02, 16);
+      const boss = new THREE.Mesh(bossGeo, bossMat);
+      boss.rotation.x = Math.PI / 2;
+      boss.position.set(0, 0.05, 0.04);
+
+      this.shieldGroup.add(shieldMesh, rim, boss);
+      this.shieldGroup.scale.set(1.4, 1.4, 1.4);
+      this.shieldGroup.position.set(-0.05, 0, 0.1);
+      this.shieldGroup.rotation.set(0, Math.PI / 2, 0);
     }
   }
 

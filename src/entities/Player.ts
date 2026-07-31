@@ -82,7 +82,7 @@ export class Player extends Entity {
     // 3D World Character Mesh Container (for 3rd Person View)
     this.mesh = new THREE.Group();
     this.worldCharacter = new CharacterPaperdoll(this.equipment);
-    this.worldCharacter.group.position.set(0, -this.defaultEyeHeight, 0);
+    this.worldCharacter.group.position.set(0, -this.defaultEyeHeight + 0.22, 0);
     this.mesh.add(this.worldCharacter.group);
     this.worldCharacter.group.visible = false; // Hidden in 1st person mode
 
@@ -444,44 +444,43 @@ export class Player extends Entity {
       }
     } else {
       this.worldCharacter.playAnimation('idle');
-    }
+      // Camera positioning based on view mode (1st Person vs 3rd Person)
+      if (this.isThirdPerson) {
+        // Cinematic Sekiro-style Over-the-Shoulder 3rd Person Camera (elevated, right shoulder offset)
+        const smoothPitch = Math.max(-0.25, Math.min(0.45, this.pitch * 0.5));
+        const desiredDist = 2.8;
+        const rawOffset = new THREE.Vector3(0.5, 0.7, desiredDist);
+        rawOffset.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
 
-    // Camera positioning based on view mode (1st Person vs 3rd Person)
-    if (this.isThirdPerson) {
-      // 3rd Person View: position camera behind player with wall raycasting
-      const smoothPitch = Math.max(-0.35, Math.min(0.4, this.pitch * 0.4));
-      const desiredDist = 2.4;
-      const rawOffset = new THREE.Vector3(0, 0.4, desiredDist);
-      rawOffset.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
+        const headPos = this.transform.position.clone();
+        const rayDir = rawOffset.clone().normalize();
+        const maxDist = rawOffset.length();
 
-      const headPos = this.transform.position.clone();
-      const rayDir = rawOffset.clone().normalize();
-      const maxDist = rawOffset.length();
+        // Wall collision raycasting to prevent camera clipping inside dungeon walls
+        const hitDist = this.collision.raycastWallDistance(headPos, rayDir, maxDist);
+        const safeDist = Math.max(0.7, hitDist - 0.25);
 
-      // Wall collision check to prevent camera from clipping inside walls behind player
-      const hitDist = this.collision.raycastWallDistance(headPos, rayDir, maxDist);
-      const safeDist = Math.max(0.6, hitDist - 0.25);
+        const safeOffset = rayDir.multiplyScalar(safeDist);
+        this.camera.position.copy(headPos).add(safeOffset);
 
-      const safeOffset = rayDir.multiplyScalar(safeDist);
-      this.camera.position.copy(headPos).add(safeOffset);
+        // Target lookAt point: upper chest / head target horizon
+        const lookTarget = this.transform.position.clone().add(new THREE.Vector3(0, 0.35, 0));
+        this.camera.lookAt(lookTarget);
 
-      // Target lookAt point: centered on player upper body
-      const lookTarget = this.transform.position.clone().add(new THREE.Vector3(0, 0.15, 0));
-      this.camera.lookAt(lookTarget);
+        // Position & rotate 3D world character mesh to face movement direction
+        if (this.mesh) {
+          this.mesh.position.copy(this.transform.position);
+          this.mesh.rotation.y = this.yaw;
+        }
+      } else {
+        // 1st Person View: position camera at eye level
+        this.camera.position.copy(this.transform.position);
+        this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
 
-      // Position & rotate 3D world character mesh to face movement direction
-      if (this.mesh) {
-        this.mesh.position.copy(this.transform.position);
-        this.mesh.rotation.y = this.yaw;
-      }
-    } else {
-      // 1st Person View: position camera at eye level
-      this.camera.position.copy(this.transform.position);
-      this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
-
-      if (this.mesh) {
-        this.mesh.position.copy(this.transform.position);
-        this.mesh.rotation.y = this.yaw + Math.PI;
+        if (this.mesh) {
+          this.mesh.position.copy(this.transform.position);
+          this.mesh.rotation.y = this.yaw;
+        }
       }
     }
 
