@@ -43,15 +43,11 @@ export class CharacterPaperdoll {
     const loader = new GLTFLoader();
 
     loader.load(
-      '/models/knight.glb',
+      '/models/soldier.glb',
       (gltf) => {
         const model = gltf.scene;
 
-        // Debug: log the full model tree to verify correct asset loaded
-        console.log('[CharacterPaperdoll] Knight model loaded. Animations:', gltf.animations.map(a => a.name));
-        model.traverse((child) => {
-          console.log(`  Node: "${child.name}" type=${child.type}`);
-        });
+        console.log('[CharacterPaperdoll] Soldier model loaded. Animations:', gltf.animations.map(a => a.name));
 
         // Compute exact bounding box of the loaded model to automatically fit & center it
         const box = new THREE.Box3().setFromObject(model);
@@ -60,16 +56,19 @@ export class CharacterPaperdoll {
         const center = new THREE.Vector3();
         box.getCenter(center);
 
-        // Target height of 1.55 units in paperdoll viewport
-        const targetHeight = 1.55;
+        // Target height of 1.6 units in paperdoll viewport
+        const targetHeight = 1.6;
         const maxDim = Math.max(size.x, size.y, size.z);
         const scaleFactor = targetHeight / (size.y > 0 ? size.y : (maxDim > 0 ? maxDim : 1));
 
         model.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-        // Shift model so its bounding center sits perfectly at Y = -0.10 in canvas
+        // Rotate model to face forward towards the camera
+        model.rotation.y = Math.PI;
+
+        // Shift model so its full body (helmet to boots) sits perfectly centered in canvas
         model.position.x = -center.x * scaleFactor;
-        model.position.y = -center.y * scaleFactor - 0.10;
+        model.position.y = -center.y * scaleFactor + 0.15;
         model.position.z = -center.z * scaleFactor;
 
         // Enhance materials & disable frustum culling to prevent culling issues
