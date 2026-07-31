@@ -57,6 +57,18 @@ export class CollisionSystem {
     }
   }
 
+  public raycastWallDistance(origin: THREE.Vector3, dir: THREE.Vector3, maxDist: number): number {
+    const step = 0.1;
+    for (let d = 0.1; d <= maxDist; d += step) {
+      const testX = origin.x + dir.x * d;
+      const testZ = origin.z + dir.z * d;
+      if (this.map.isWallAtWorld(testX, testZ, 0.25)) {
+        return d;
+      }
+    }
+    return maxDist;
+  }
+
   public getEntitiesInArc(
     origin: THREE.Vector3,
     direction: THREE.Vector3,

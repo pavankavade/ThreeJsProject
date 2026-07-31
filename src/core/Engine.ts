@@ -82,6 +82,9 @@ export class Engine {
 
   private spawnWorldEntities(): void {
     this.player = new Player(this.camera, this.input, this.collision);
+    if (this.player.mesh) {
+      this.scene.add(this.player.mesh);
+    }
     this.hud = new HUD(this.player.equipment);
 
     // Link player stats to equipment UI for Tab menu display

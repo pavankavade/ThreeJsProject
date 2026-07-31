@@ -6,6 +6,7 @@ import { EventBus } from '../core/EventBus';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import type { CollisionTarget } from '../systems/CollisionSystem';
 import { EquipmentSystem } from '../systems/EquipmentSystem';
+import { CharacterPaperdoll } from './CharacterPaperdoll';
 
 export class Player extends Entity {
   public camera: THREE.PerspectiveCamera;
@@ -20,6 +21,10 @@ export class Player extends Entity {
   public dexterity: number = 12;
 
   public equipment: EquipmentSystem;
+
+  // Perspective Mode (1st vs 3rd Person)
+  public isThirdPerson: boolean = false;
+  public worldCharacter: CharacterPaperdoll;
 
   private input: InputManager;
   private collision: CollisionSystem;
@@ -56,9 +61,9 @@ export class Player extends Entity {
   public consumableProgress: number = 0;
   private readonly consumableDuration: number = 1.4;
 
-  // Rest position for sword
-  private readonly swordRestPos = new THREE.Vector3(0.35, -0.3, -0.5);
-  private readonly swordRestRot = new THREE.Euler(0.2, -0.3, 0);
+  // Rest position for sword (brings hand & Falchion into clear view)
+  private readonly swordRestPos = new THREE.Vector3(0.25, -0.22, -0.4);
+  private readonly swordRestRot = new THREE.Euler(0.25, -0.45, 0.15);
 
   constructor(camera: THREE.PerspectiveCamera, input: InputManager, collision: CollisionSystem) {
     super('Player');
@@ -70,8 +75,16 @@ export class Player extends Entity {
     this.equipment = new EquipmentSystem();
     this.transform.position.set(0, this.defaultEyeHeight, 0);
 
+    // 1st Person Viewmodels Container
     this.viewmodelGroup = new THREE.Group();
     this.camera.add(this.viewmodelGroup);
+
+    // 3D World Character Mesh Container (for 3rd Person View)
+    this.mesh = new THREE.Group();
+    this.worldCharacter = new CharacterPaperdoll(this.equipment);
+    this.worldCharacter.group.position.set(0, -this.defaultEyeHeight, 0);
+    this.mesh.add(this.worldCharacter.group);
+    this.worldCharacter.group.visible = false; // Hidden in 1st person mode
 
     this.createViewmodels();
     this.registerEquipmentEvents();
@@ -154,6 +167,20 @@ export class Player extends Entity {
     const horizBar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.01), crossMat);
     horizBar.position.set(0, 0.12, 0.055);
     this.shieldMesh.add(vertBar, horizBar);
+
+    // 1st Person Player Left Arm & Gauntlet Hand holding inner shield handle
+    const gloveMat = new THREE.MeshStandardMaterial({ color: 0x3d2716, roughness: 0.75 });
+    const sleeveMat = new THREE.MeshStandardMaterial({ color: 0x243242, roughness: 0.85 });
+
+    const leftGlove = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.03, 0.14, 10), gloveMat);
+    leftGlove.position.set(0, 0, -0.05);
+    leftGlove.rotation.x = Math.PI / 2;
+
+    const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.04, 0.4, 12), sleeveMat);
+    leftArm.position.set(-0.04, -0.2, -0.15);
+    leftArm.rotation.x = -0.55;
+
+    this.shieldMesh.add(leftGlove, leftArm);
   }
 
   /** Build a curved falchion blade using ExtrudeGeometry */
@@ -207,6 +234,21 @@ export class Player extends Entity {
     const pommel = new THREE.Mesh(pommelGeo, guardMat);
     pommel.position.set(0, -0.2, 0);
     this.swordMesh.add(pommel);
+
+    // 1st Person Right Gauntlet Hand gripping the Falchion handle
+    const gloveMat = new THREE.MeshStandardMaterial({ color: 0x3d2716, roughness: 0.75, metalness: 0.1 });
+    const sleeveMat = new THREE.MeshStandardMaterial({ color: 0x243242, roughness: 0.85 });
+
+    const handGlove = new THREE.Mesh(new THREE.CylinderGeometry(0.035 * scale, 0.03 * scale, 0.16 * scale, 10), gloveMat);
+    handGlove.position.set(0, -0.1 * scale, 0);
+
+    // 1st Person Right Forearm extending into view
+    const armForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.048 * scale, 0.04 * scale, 0.42 * scale, 12), sleeveMat);
+    armForearm.position.set(0.02 * scale, -0.28 * scale, 0.15 * scale);
+    armForearm.rotation.x = -0.45;
+    armForearm.rotation.z = -0.1;
+
+    this.swordMesh.add(handGlove, armForearm);
   }
 
   private registerEquipmentEvents(): void {
@@ -318,6 +360,12 @@ export class Player extends Entity {
   }
 
   public updatePlayer(delta: number, enemies: CollisionTarget[]): void {
+    if (this.input.viewToggleRequested) {
+      this.isThirdPerson = !this.isThirdPerson;
+      this.viewmodelGroup.visible = !this.isThirdPerson;
+      this.worldCharacter.group.visible = this.isThirdPerson;
+    }
+
     this.health.update(delta);
     this.handleMouseLook();
     this.handleMovement(delta);
@@ -385,7 +433,47 @@ export class Player extends Entity {
       }
     }
 
-    this.camera.position.copy(this.transform.position);
+    // Camera positioning based on view mode (1st Person vs 3rd Person)
+    if (this.isThirdPerson) {
+      // Over-the-shoulder 3rd Person View: position camera behind player's right shoulder
+      const smoothPitch = Math.max(-0.35, Math.min(0.4, this.pitch * 0.4));
+      const desiredDist = 2.4;
+      const rawOffset = new THREE.Vector3(0.4, 0.45, desiredDist);
+      rawOffset.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
+
+      const headPos = this.transform.position.clone();
+      const rayDir = rawOffset.clone().normalize();
+      const maxDist = rawOffset.length();
+
+      // Wall collision check to prevent camera from clipping inside walls behind player
+      const hitDist = this.collision.raycastWallDistance(headPos, rayDir, maxDist);
+      const safeDist = Math.max(0.6, hitDist - 0.25);
+
+      const safeOffset = rayDir.multiplyScalar(safeDist);
+      this.camera.position.copy(headPos).add(safeOffset);
+
+      // Target lookAt point: centered on player upper body
+      const lookTarget = this.transform.position.clone().add(new THREE.Vector3(0, 0.15, 0));
+      this.camera.lookAt(lookTarget);
+
+      // Position & rotate 3D world character mesh to face forward
+      if (this.mesh) {
+        this.mesh.position.copy(this.transform.position);
+        this.mesh.rotation.y = this.yaw + Math.PI;
+      }
+    } else {
+      // 1st Person View: position camera at eye level
+      this.camera.position.copy(this.transform.position);
+      this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
+
+      if (this.mesh) {
+        this.mesh.position.copy(this.transform.position);
+        this.mesh.rotation.y = this.yaw + Math.PI;
+      }
+    }
+
+    // Update 3D world character animations & model transforms
+    this.worldCharacter.update(delta);
   }
 
   // Mouse steering accumulator for dynamic swing tracking

@@ -10,6 +10,7 @@ export class InputManager {
   public jumpRequested: boolean = false;
   public inventoryToggleRequested: boolean = false;
   public mapToggleRequested: boolean = false;
+  public viewToggleRequested: boolean = false;
   public isBlocking: boolean = false;
 
   public slotKey1Pressed: boolean = false;
@@ -39,6 +40,9 @@ export class InputManager {
       }
       if (e.code === 'KeyM') {
         this.mapToggleRequested = true;
+      }
+      if (e.code === 'KeyV') {
+        this.viewToggleRequested = true;
       }
 
       // Slot Keys 1, 2, 3, 4
@@ -113,6 +117,7 @@ export class InputManager {
     this.jumpRequested = false;
     this.inventoryToggleRequested = false;
     this.mapToggleRequested = false;
+    this.viewToggleRequested = false;
     this.slotKey1Pressed = false;
     this.slotKey2Pressed = false;
     this.slotKey3Pressed = false;
