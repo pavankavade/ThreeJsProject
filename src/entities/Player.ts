@@ -38,6 +38,7 @@ export class Player extends Entity {
   private isAttacking: boolean = false;
   private attackProgress: number = 0;
   private attackCooldown: number = 0;
+  private wasBlocking: boolean = false;
 
   constructor(camera: THREE.PerspectiveCamera, input: InputManager, collision: CollisionSystem) {
     super('Player');
@@ -276,7 +277,11 @@ export class Player extends Entity {
     this.shieldMesh.rotation.x = THREE.MathUtils.lerp(this.shieldMesh.rotation.x, targetShieldRot.x, delta * 10);
     this.shieldMesh.rotation.y = THREE.MathUtils.lerp(this.shieldMesh.rotation.y, targetShieldRot.y, delta * 10);
 
-    EventBus.emit('PLAYER_BLOCK_TOGGLE', this.input.isBlocking);
+    // Emit block event ONLY on state change (prevents 60Hz sound repetition while holding RMB)
+    if (this.input.isBlocking !== this.wasBlocking) {
+      this.wasBlocking = this.input.isBlocking;
+      EventBus.emit('PLAYER_BLOCK_TOGGLE', this.input.isBlocking);
+    }
   }
 
   public damagePlayer(rawAmount: number): void {
