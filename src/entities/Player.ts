@@ -5,6 +5,7 @@ import { InputManager } from '../core/Input';
 import { EventBus } from '../core/EventBus';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import type { CollisionTarget } from '../systems/CollisionSystem';
+import { DarkAndDarkerEquipment } from '../systems/DarkAndDarkerEquipment';
 
 export class Player extends Entity {
   public camera: THREE.PerspectiveCamera;
@@ -12,7 +13,8 @@ export class Player extends Entity {
   public stamina: number = 100;
   public maxStamina: number = 100;
   public attackPower: number = 25;
-  public currentWeaponName: string = 'Iron Longsword';
+
+  public equipment: DarkAndDarkerEquipment;
 
   private input: InputManager;
   private collision: CollisionSystem;
@@ -28,17 +30,23 @@ export class Player extends Entity {
   private readonly gravity: number = -16.0;
   private readonly jumpForce: number = 5.5;
 
-  // Viewmodel arms
+  // Viewmodel arms & weapons
   private viewmodelGroup: THREE.Group;
   private swordMesh!: THREE.Group;
   private shieldMesh!: THREE.Group;
+  private potionMesh!: THREE.Group;
   private weaponGlowLight: THREE.PointLight | null = null;
 
-  // Attack & Block states
+  // Attack, Block & Consumable states
   private isAttacking: boolean = false;
   private attackProgress: number = 0;
   private attackCooldown: number = 0;
   private wasBlocking: boolean = false;
+
+  // Consumable Action Timer
+  public isUsingConsumable: boolean = false;
+  public consumableProgress: number = 0; // 0 to 1.5s
+  private readonly consumableDuration: number = 1.4;
 
   constructor(camera: THREE.PerspectiveCamera, input: InputManager, collision: CollisionSystem) {
     super('Player');
@@ -47,16 +55,18 @@ export class Player extends Entity {
     this.collision = collision;
 
     this.health = new HealthComponent(100);
+    this.equipment = new DarkAndDarkerEquipment();
     this.transform.position.set(0, this.defaultEyeHeight, 0);
 
     this.viewmodelGroup = new THREE.Group();
     this.camera.add(this.viewmodelGroup);
 
-    this.createViewmodel();
+    this.createViewmodels();
+    this.registerEquipmentEvents();
   }
 
-  private createViewmodel(): void {
-    // Left Hand: Heater Shield
+  private createViewmodels(): void {
+    // 1. Left Hand: Heater Shield
     const shieldWoodMat = new THREE.MeshStandardMaterial({ color: 0x3d2514, roughness: 0.6 });
     const shieldRimMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.8, roughness: 0.3 });
 
@@ -73,22 +83,81 @@ export class Player extends Entity {
     this.shieldMesh.rotation.set(0.1, 0.4, -0.1);
     this.viewmodelGroup.add(this.shieldMesh);
 
-    // Right Hand: Sword Container
+    // 2. Right Hand: Sword Container
     this.swordMesh = new THREE.Group();
     this.swordMesh.position.set(0.35, -0.3, -0.5);
     this.swordMesh.rotation.set(0.2, -0.3, 0);
     this.viewmodelGroup.add(this.swordMesh);
 
-    // Default weapon mesh
-    this.equipWeapon('Iron Longsword', 25);
+    // 3. Right Hand: Potion / Bandage Container
+    this.potionMesh = new THREE.Group();
+    this.potionMesh.position.set(0.25, -0.35, -0.4);
+    this.potionMesh.rotation.set(0.3, -0.2, 0);
+    this.viewmodelGroup.add(this.potionMesh);
+
+    this.updateActiveHandViewmodel();
   }
 
-  public equipWeapon(name: string, atkPower: number): void {
-    this.currentWeaponName = name;
-    this.attackPower = atkPower;
+  private registerEquipmentEvents(): void {
+    EventBus.on('EQUIPMENT_CHANGED', () => {
+      this.updateActiveHandViewmodel();
+    });
+  }
 
-    // Clear old weapon geometry
+  public updateActiveHandViewmodel(): void {
+    const activeItem = this.equipment.getActiveHandItem();
+
+    if (this.equipment.activeSlot === 1 || this.equipment.activeSlot === 2) {
+      // Weapon or Shield mode
+      this.potionMesh.visible = false;
+      this.swordMesh.visible = true;
+      this.shieldMesh.visible = (this.equipment.activeSlot === 2 || !!this.equipment.weapon2);
+
+      if (activeItem && activeItem.type === 'WEAPON') {
+        this.equipWeaponMesh(activeItem.name, activeItem.value);
+      } else {
+        this.equipWeaponMesh('Iron Longsword', 25);
+      }
+    } else {
+      // Slot 3 or 4: Consumable mode (Potion or Bandage)
+      this.swordMesh.visible = false;
+      this.potionMesh.visible = true;
+      this.potionMesh.clear();
+
+      if (activeItem) {
+        if (activeItem.name.includes('Bandage')) {
+          // Render Roll of Bandage
+          const clothMat = new THREE.MeshStandardMaterial({ color: 0xdedeeb, roughness: 0.8 });
+          const rollGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.15, 12);
+          const roll = new THREE.Mesh(rollGeo, clothMat);
+          roll.rotation.z = Math.PI / 2;
+          this.potionMesh.add(roll);
+        } else {
+          // Render Potion Flask
+          const glassMat = new THREE.MeshStandardMaterial({ color: 0x2288ff, roughness: 0.1, metalness: 0.8, transparent: true, opacity: 0.8 });
+          const fluidMat = new THREE.MeshBasicMaterial({ color: 0xee2200 });
+
+          const flaskGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.2, 10);
+          const flask = new THREE.Mesh(flaskGeo, glassMat);
+
+          const fluidGeo = new THREE.CylinderGeometry(0.05, 0.07, 0.12, 10);
+          const fluid = new THREE.Mesh(fluidGeo, fluidMat);
+          fluid.position.set(0, -0.03, 0);
+
+          const corkMat = new THREE.MeshStandardMaterial({ color: 0x664422, roughness: 0.9 });
+          const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05), corkMat);
+          cork.position.set(0, 0.11, 0);
+
+          this.potionMesh.add(flask, fluid, cork);
+        }
+      }
+    }
+  }
+
+  private equipWeaponMesh(name: string, atkPower: number): void {
+    this.attackPower = atkPower;
     this.swordMesh.clear();
+
     if (this.weaponGlowLight) {
       this.weaponGlowLight.dispose();
       this.weaponGlowLight = null;
@@ -101,7 +170,7 @@ export class Player extends Entity {
     if (name.includes('Flame')) {
       bladeMat = new THREE.MeshStandardMaterial({ color: 0xff3300, roughness: 0.2, metalness: 0.9, emissive: 0xff2200, emissiveIntensity: 0.8 });
       guardMat = new THREE.MeshStandardMaterial({ color: 0x441100, metalness: 0.9 });
-      bladeGeo = new THREE.BoxGeometry(0.09, 0.95, 0.025); // Broad blade
+      bladeGeo = new THREE.BoxGeometry(0.09, 0.95, 0.025);
 
       this.weaponGlowLight = new THREE.PointLight(0xff4400, 1.5, 3);
       this.weaponGlowLight.position.set(0, 0.5, 0);
@@ -123,13 +192,12 @@ export class Player extends Entity {
     } else if (name.includes('Shadow') || name.includes('Dagger')) {
       bladeMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.2, metalness: 0.95, emissive: 0x8800ff, emissiveIntensity: 0.5 });
       guardMat = new THREE.MeshStandardMaterial({ color: 0x220044, metalness: 0.9 });
-      bladeGeo = new THREE.BoxGeometry(0.04, 0.55, 0.015); // Dagger
+      bladeGeo = new THREE.BoxGeometry(0.04, 0.55, 0.015);
 
       this.weaponGlowLight = new THREE.PointLight(0xaa00ff, 1.0, 2);
       this.weaponGlowLight.position.set(0, 0.3, 0);
       this.swordMesh.add(this.weaponGlowLight);
     } else {
-      // Default Iron Longsword
       bladeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.2 });
       guardMat = new THREE.MeshStandardMaterial({ color: 0x442211, roughness: 0.7 });
     }
@@ -153,6 +221,7 @@ export class Player extends Entity {
     this.handleMouseLook();
     this.handleMovement(delta);
     this.handleCombat(delta, enemies);
+    this.handleConsumables(delta);
     this.updateStamina(delta);
   }
 
@@ -223,7 +292,9 @@ export class Player extends Entity {
   }
 
   private handleCombat(delta: number, enemies: CollisionTarget[]): void {
-    // Attack Cooldown
+    // Only attack/block when holding Weapon / Shield (Slots 1 & 2)
+    if (this.equipment.activeSlot !== 1 && this.equipment.activeSlot !== 2) return;
+
     if (this.attackCooldown > 0) {
       this.attackCooldown -= delta;
     }
@@ -277,10 +348,59 @@ export class Player extends Entity {
     this.shieldMesh.rotation.x = THREE.MathUtils.lerp(this.shieldMesh.rotation.x, targetShieldRot.x, delta * 10);
     this.shieldMesh.rotation.y = THREE.MathUtils.lerp(this.shieldMesh.rotation.y, targetShieldRot.y, delta * 10);
 
-    // Emit block event ONLY on state change (prevents 60Hz sound repetition while holding RMB)
     if (this.input.isBlocking !== this.wasBlocking) {
       this.wasBlocking = this.input.isBlocking;
       EventBus.emit('PLAYER_BLOCK_TOGGLE', this.input.isBlocking);
+    }
+  }
+
+  private handleConsumables(delta: number): void {
+    // Only process consumable drinking/bandaging when in Belt Slot 3 or 4
+    if (this.equipment.activeSlot !== 3 && this.equipment.activeSlot !== 4) {
+      this.isUsingConsumable = false;
+      this.consumableProgress = 0;
+      return;
+    }
+
+    const activeItem = this.equipment.getActiveHandItem();
+    if (!activeItem) {
+      this.isUsingConsumable = false;
+      this.consumableProgress = 0;
+      return;
+    }
+
+    // Holding LMB triggers drinking / bandaging timer
+    if (this.input.isKeyDown('MouseLeft') || this.input.attackRequested) {
+      this.isUsingConsumable = true;
+      this.consumableProgress += delta;
+
+      // Animate Potion/Bandage bringing up to mouth/chest
+      const tilt = Math.sin((this.consumableProgress / this.consumableDuration) * Math.PI);
+      this.potionMesh.position.y = -0.35 + tilt * 0.15;
+      this.potionMesh.rotation.x = 0.3 + tilt * 0.4;
+
+      if (this.consumableProgress >= this.consumableDuration) {
+        // Complete Drinking / Bandaging!
+        this.isUsingConsumable = false;
+        this.consumableProgress = 0;
+
+        if (activeItem.name.includes('Bandage')) {
+          EventBus.emit('APPLY_BANDAGE');
+          this.health.heal(activeItem.value);
+        } else {
+          EventBus.emit('DRINK_POTION');
+          this.health.heal(activeItem.value);
+        }
+
+        EventBus.emit('PLAYER_HEALTH_CHANGE', { current: this.health.current, max: this.health.max });
+        this.equipment.consumeActiveConsumable();
+        this.updateActiveHandViewmodel();
+      }
+    } else {
+      this.isUsingConsumable = false;
+      this.consumableProgress = 0;
+      this.potionMesh.position.y = THREE.MathUtils.lerp(this.potionMesh.position.y, -0.35, delta * 10);
+      this.potionMesh.rotation.x = THREE.MathUtils.lerp(this.potionMesh.rotation.x, 0.3, delta * 10);
     }
   }
 
@@ -290,7 +410,7 @@ export class Player extends Entity {
     let finalDamage = rawAmount;
 
     // Shield mitigation
-    if (this.input.isBlocking && this.stamina >= 10) {
+    if (this.input.isBlocking && this.stamina >= 10 && this.equipment.activeSlot <= 2) {
       finalDamage = Math.floor(rawAmount * 0.15); // 85% block reduction
       this.stamina = Math.max(0, this.stamina - 15);
       EventBus.emit('PLAYER_STAMINA_CHANGE', { current: this.stamina, max: this.maxStamina });

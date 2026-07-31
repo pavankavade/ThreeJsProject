@@ -72,6 +72,225 @@ canvas {
   transition: opacity 0.2s ease;
 }
 
+/* --- Action Progress Bar (Drinking Potion / Bandaging) --- */
+.hud-action-progressbar {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  text-align: center;
+  background: rgba(15, 18, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  backdrop-filter: blur(8px);
+}
+
+.hud-action-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ecc94b;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.hud-action-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hud-action-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ecc94b, #f6e05e);
+  box-shadow: 0 0 10px rgba(236, 201, 75, 0.6);
+  transition: width 0.05s linear;
+}
+
+/* --- Dark and Darker Hotbar (4-Slot Belt: 1, 2, 3, 4) --- */
+.hud-dad-hotbar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  background: rgba(12, 15, 22, 0.9);
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 2px solid #2d3748;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  pointer-events: auto;
+}
+
+.hud-dad-slot {
+  width: 90px;
+  height: 75px;
+  background: #11141e;
+  border: 2px solid #2d3748;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.15s ease;
+}
+
+.hud-dad-slot.active {
+  border-color: #00f0ff;
+  background: rgba(0, 240, 255, 0.12);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
+}
+
+.hud-dad-keybadge {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.15);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.hud-dad-slottitle {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #a0aec0;
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+}
+
+.hud-dad-icon {
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
+
+.hud-dad-name {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 82px;
+}
+
+.hud-dad-empty {
+  font-size: 0.7rem;
+  color: #4a5568;
+  margin-top: 6px;
+}
+
+.hud-dad-subtext {
+  font-size: 0.62rem;
+  color: #ecc94b;
+  margin-top: 1px;
+}
+
+/* --- Dark and Darker Inventory Sheet Modal --- */
+.hud-dad-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(8, 10, 15, 0.82);
+  backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  z-index: 90;
+}
+
+.hud-dad-card {
+  width: 620px;
+  background: #141722;
+  border: 3px solid #00f0ff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.3);
+}
+
+.hud-dad-header {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #00f0ff;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.hud-dad-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hud-dad-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #a0aec0;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.hud-dad-equip-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.hud-dad-card-slot {
+  background: #0d1017;
+  border: 1px solid #2d3748;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.hud-dad-card-label {
+  font-size: 0.75rem;
+  color: #00f0ff;
+  font-weight: 700;
+}
+
+.hud-dad-card-val {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  margin-top: 2px;
+}
+
+.hud-dad-card-empty {
+  font-size: 0.85rem;
+  color: #4a5568;
+  margin-top: 2px;
+}
+
+.hud-dad-stash-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.hud-dad-hint {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: #718096;
+  text-align: center;
+}
+
 /* --- Stats Card (Health & Stamina) --- */
 .hud-stats-card {
   position: absolute;
@@ -215,132 +434,6 @@ canvas {
   margin-top: 10px;
   font-size: 0.8rem;
   color: #718096;
-}
-
-/* --- Minecraft Hotbar --- */
-.hud-hotbar-container {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-  background: rgba(15, 18, 26, 0.85);
-  padding: 8px;
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  pointer-events: auto;
-}
-
-/* --- Minecraft Inventory Modal --- */
-.hud-inventory-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(8, 10, 15, 0.75);
-  backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-  z-index: 90;
-}
-
-.hud-inventory-card {
-  width: 520px;
-  background: #181b24;
-  border: 3px solid #323846;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
-}
-
-.hud-inventory-header {
-  font-family: 'Cinzel', serif;
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #ecc94b;
-  letter-spacing: 2px;
-  margin-bottom: 16px;
-  text-align: center;
-}
-
-.hud-inventory-section-title {
-  font-size: 0.8rem;
-  color: #a0aec0;
-  margin-top: 12px;
-  margin-bottom: 6px;
-  font-weight: 600;
-}
-
-.hud-slot-matrix {
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 6px;
-}
-
-.hud-slot-matrix.hotbar {
-  margin-top: 6px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.hud-inventory-slot {
-  width: 48px;
-  height: 48px;
-  background: #0f1117;
-  border: 2px solid #2d3748;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.hud-inventory-slot:hover {
-  border-color: #ecc94b;
-  background: #1a202c;
-}
-
-.hud-inventory-slot.active {
-  border-color: #ecc94b;
-  background: rgba(236, 201, 75, 0.15);
-  box-shadow: 0 0 12px rgba(236, 201, 75, 0.5);
-}
-
-.hud-slot-digit {
-  position: absolute;
-  top: 2px;
-  left: 4px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #a0aec0;
-}
-
-.hud-item-icon {
-  font-size: 1.4rem;
-}
-
-.hud-item-count {
-  position: absolute;
-  bottom: 2px;
-  right: 4px;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 1px 1px 2px #000;
-}
-
-.hud-inventory-hint {
-  margin-top: 16px;
-  font-size: 0.8rem;
-  color: #718096;
-  text-align: center;
 }
 
 /* --- Tooltip --- */

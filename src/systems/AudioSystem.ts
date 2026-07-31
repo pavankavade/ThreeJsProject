@@ -33,6 +33,8 @@ export class AudioSystem {
     EventBus.on('ENEMY_DIED', () => this.playSkeletonDeath());
     EventBus.on('CHEST_OPENED', () => this.playChestOpen());
     EventBus.on('LOOT_ACQUIRED', () => this.playLootPickup());
+    EventBus.on('DRINK_POTION', () => this.playDrinkPotion());
+    EventBus.on('APPLY_BANDAGE', () => this.playBandage());
   }
 
   private playSwordSwing(): void {
@@ -40,7 +42,6 @@ export class AudioSystem {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
-    // Whoosh noise blend
     osc.type = 'sine';
     osc.frequency.setValueAtTime(400, this.ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.18);
@@ -169,5 +170,47 @@ export class AudioSystem {
       osc.start(now + idx * 0.08);
       osc.stop(now + idx * 0.08 + 0.2);
     });
+  }
+
+  private playDrinkPotion(): void {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    // Gurgling liquid pitch bend
+    for (let i = 0; i < 3; i++) {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300 + i * 50, now + i * 0.15);
+      osc.frequency.exponentialRampToValueAtTime(550 + i * 80, now + i * 0.15 + 0.12);
+
+      gain.gain.setValueAtTime(0.25, now + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now + i * 0.15);
+      osc.stop(now + i * 0.15 + 0.12);
+    }
+  }
+
+  private playBandage(): void {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(350, this.ctx.currentTime + 0.4);
+
+    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.4);
   }
 }

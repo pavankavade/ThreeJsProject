@@ -2,8 +2,8 @@ import { EventBus } from '../core/EventBus';
 import type { LootItem } from '../entities/Chest';
 import { Minimap } from './Minimap';
 import { FullMapUI } from './FullMapUI';
-import { InventorySystem } from '../systems/Inventory';
-import { InventoryUI } from './InventoryUI';
+import { DarkAndDarkerEquipment } from '../systems/DarkAndDarkerEquipment';
+import { DarkAndDarkerUI } from './DarkAndDarkerUI';
 
 export class HUD {
   private container: HTMLElement;
@@ -20,23 +20,15 @@ export class HUD {
 
   public minimap!: Minimap;
   public fullMapUI!: FullMapUI;
-  public inventorySystem: InventorySystem;
-  public inventoryUI!: InventoryUI;
+  public dadUI!: DarkAndDarkerUI;
 
-  constructor(
-    onHealPlayer: (hp: number) => void,
-    onEquipWeapon: (item: LootItem | null) => void
-  ) {
+  constructor(equipment: DarkAndDarkerEquipment) {
     this.container = document.body;
-    this.inventorySystem = new InventorySystem();
-    this.buildUI(onHealPlayer, onEquipWeapon);
+    this.buildUI(equipment);
     this.registerEvents();
   }
 
-  private buildUI(
-    onHealPlayer: (hp: number) => void,
-    onEquipWeapon: (item: LootItem | null) => void
-  ): void {
+  private buildUI(equipment: DarkAndDarkerEquipment): void {
     // --- HUD Root Wrapper ---
     const hudRoot = document.createElement('div');
     hudRoot.className = 'hud-root';
@@ -97,8 +89,8 @@ export class HUD {
     // --- Full Map Overlay Modal ---
     this.fullMapUI = new FullMapUI(hudRoot);
 
-    // --- Minecraft Inventory UI ---
-    this.inventoryUI = new InventoryUI(hudRoot, this.inventorySystem, onHealPlayer, onEquipWeapon);
+    // --- Dark and Darker Equipment & Belt UI ---
+    this.dadUI = new DarkAndDarkerUI(hudRoot, equipment);
 
     // --- Loot Notification Banner ---
     this.lootNotification = document.createElement('div');
@@ -122,7 +114,7 @@ export class HUD {
     startCard.appendChild(title);
 
     const desc = document.createElement('p');
-    desc.textContent = 'Enter the shadows. Slain skeletons with your sword and shield, loot chests, and reach the Exit Portal!';
+    desc.textContent = 'Dark and Darker style combat. Equip weapons, cycle potions/bandages on your belt, and escape!';
     startCard.appendChild(desc);
 
     const controls = document.createElement('div');
@@ -130,13 +122,12 @@ export class HUD {
     
     const c1 = document.createElement('div'); c1.textContent = 'WASD / Shift : Move & Sprint';
     const c2 = document.createElement('div'); c2.textContent = 'Space : Jump';
-    const c3 = document.createElement('div'); c3.textContent = 'M : Open Full Map';
-    const c4 = document.createElement('div'); c4.textContent = '1-9 / Scroll : Select Hotbar Slot';
-    const c5 = document.createElement('div'); c5.textContent = 'TAB : Toggle Minecraft Inventory';
-    const c6 = document.createElement('div'); c6.textContent = 'Left Click : Sword Attack / Use Item';
-    const c7 = document.createElement('div'); c7.textContent = 'Right Click : Shield Block';
-    const c8 = document.createElement('div'); c8.textContent = 'E : Loot Chest';
-    controls.appendChild(c1); controls.appendChild(c2); controls.appendChild(c3); controls.appendChild(c4); controls.appendChild(c5); controls.appendChild(c6); controls.appendChild(c7); controls.appendChild(c8);
+    const c3 = document.createElement('div'); c3.textContent = '1 : Primary Weapon | 2 : Offhand Shield';
+    const c4 = document.createElement('div'); c4.textContent = '3 : Cycle & Equip Potions | 4 : Cycle Bandages';
+    const c5 = document.createElement('div'); c5.textContent = 'Left Click : Attack / Hold to Drink & Bandage';
+    const c6 = document.createElement('div'); c6.textContent = 'Right Click : Shield Block';
+    const c7 = document.createElement('div'); c7.textContent = 'M : Full Map | TAB : Equipment & Stash';
+    controls.appendChild(c1); controls.appendChild(c2); controls.appendChild(c3); controls.appendChild(c4); controls.appendChild(c5); controls.appendChild(c6); controls.appendChild(c7);
     startCard.appendChild(controls);
 
     const startBtn = document.createElement('button');

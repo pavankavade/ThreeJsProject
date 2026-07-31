@@ -10,8 +10,11 @@ export class InputManager {
   public inventoryToggleRequested: boolean = false;
   public mapToggleRequested: boolean = false;
   public isBlocking: boolean = false;
-  public selectedHotbarDigit: number | null = null;
-  public wheelScrollDelta: number = 0;
+
+  public slotKey1Pressed: boolean = false;
+  public slotKey2Pressed: boolean = false;
+  public slotKey3Pressed: boolean = false;
+  public slotKey4Pressed: boolean = false;
 
   private domElement: HTMLElement;
 
@@ -30,20 +33,18 @@ export class InputManager {
         this.jumpRequested = true;
       }
       if (e.code === 'Tab' || e.code === 'KeyI') {
-        e.preventDefault(); // Prevent tab focus shifting
+        e.preventDefault();
         this.inventoryToggleRequested = true;
       }
       if (e.code === 'KeyM') {
         this.mapToggleRequested = true;
       }
 
-      // Hotbar selection 1-9
-      if (e.code.startsWith('Digit')) {
-        const num = parseInt(e.code.replace('Digit', ''), 10);
-        if (num >= 1 && num <= 9) {
-          this.selectedHotbarDigit = num - 1; // 0-based index
-        }
-      }
+      // Dark and Darker Slot Keys 1, 2, 3, 4
+      if (e.code === 'Digit1') this.slotKey1Pressed = true;
+      if (e.code === 'Digit2') this.slotKey2Pressed = true;
+      if (e.code === 'Digit3') this.slotKey3Pressed = true;
+      if (e.code === 'Digit4') this.slotKey4Pressed = true;
     });
 
     window.addEventListener('keyup', (e) => {
@@ -54,12 +55,6 @@ export class InputManager {
       if (this.pointerLocked) {
         this.mouseDeltaX += e.movementX;
         this.mouseDeltaY += e.movementY;
-      }
-    });
-
-    window.addEventListener('wheel', (e) => {
-      if (this.pointerLocked) {
-        this.wheelScrollDelta += Math.sign(e.deltaY);
       }
     });
 
@@ -78,7 +73,6 @@ export class InputManager {
       }
     });
 
-    // Prevent context menu on right click
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
     document.addEventListener('pointerlockchange', () => {
@@ -110,7 +104,9 @@ export class InputManager {
     this.jumpRequested = false;
     this.inventoryToggleRequested = false;
     this.mapToggleRequested = false;
-    this.selectedHotbarDigit = null;
-    this.wheelScrollDelta = 0;
+    this.slotKey1Pressed = false;
+    this.slotKey2Pressed = false;
+    this.slotKey3Pressed = false;
+    this.slotKey4Pressed = false;
   }
 }

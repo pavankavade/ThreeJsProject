@@ -9,7 +9,6 @@ import { AudioSystem } from '../systems/AudioSystem';
 import { Player } from '../entities/Player';
 import { Skeleton } from '../entities/Skeleton';
 import { Chest } from '../entities/Chest';
-import type { LootItem } from '../entities/Chest';
 import { HUD } from '../ui/HUD';
 
 export class Engine {
@@ -60,11 +59,9 @@ export class Engine {
   }
 
   private initScene(): void {
-    // Lighter background and clearer fog for high visibility
     this.scene.background = new THREE.Color(0x1a1d26);
     this.scene.fog = new THREE.FogExp2(0x1a1d26, 0.03);
 
-    // Brighter ambient lighting throughout the dungeon
     const ambientLight = new THREE.AmbientLight(0x667799, 2.2);
     this.scene.add(ambientLight);
 
@@ -81,26 +78,13 @@ export class Engine {
     this.map = new DungeonMap(this.scene);
     this.collision = new CollisionSystem(this.map);
     this.particles = new ParticleSystem(this.scene);
+  }
 
-    // Initialize HUD with potion heal and weapon equip callbacks
-    this.hud = new HUD(
-      (hpAmount: number) => {
-        if (this.player) {
-          this.player.health.heal(hpAmount);
-          EventBus.emit('PLAYER_HEALTH_CHANGE', {
-            current: this.player.health.current,
-            max: this.player.health.max
-          });
-        }
-      },
-      (item: LootItem | null) => {
-        if (this.player && item && item.type === 'WEAPON') {
-          this.player.equipWeapon(item.name, item.value);
-        }
-      }
-    );
+  private spawnWorldEntities(): void {
+    this.player = new Player(this.camera, this.input, this.collision);
+    this.hud = new HUD(this.player.equipment);
 
-    // Register particle event handlers
+    // Register particle and event handlers
     EventBus.on('ENEMY_HIT', (data: { position: THREE.Vector3 }) => {
       if (data && data.position) {
         this.particles.spawnSparks(data.position, 15, 0xee4422);
@@ -121,10 +105,6 @@ export class Engine {
       this.input.requestPointerLock();
       this.isRunning = true;
     });
-  }
-
-  private spawnWorldEntities(): void {
-    this.player = new Player(this.camera, this.input, this.collision);
 
     // Spawn entities based on DungeonMap layout
     this.map.spawnPoints.forEach((sp) => {
@@ -141,7 +121,6 @@ export class Engine {
       }
     });
 
-    // Fallback default spawn if map had no player spawn
     if (this.map.spawnPoints.filter(s => s.type === 'PLAYER').length === 0) {
       this.player.transform.position.set(3, 1.6, 3);
     }
@@ -167,7 +146,13 @@ export class Engine {
   };
 
   private updateGame(delta: number, elapsedTime: number): void {
-    // 0. Handle Full Map Toggle (KeyM)
+    // 0. Dark and Darker Slot Selection (Keys 1, 2, 3, 4)
+    if (this.input.slotKey1Pressed) this.player.equipment.selectSlot(1);
+    if (this.input.slotKey2Pressed) this.player.equipment.selectSlot(2);
+    if (this.input.slotKey3Pressed) this.player.equipment.selectSlot(3);
+    if (this.input.slotKey4Pressed) this.player.equipment.selectSlot(4);
+
+    // Handle Full Map Toggle (KeyM)
     if (this.input.mapToggleRequested) {
       this.hud.fullMapUI.toggle();
       if (this.hud.fullMapUI.isOpen) {
@@ -177,39 +162,21 @@ export class Engine {
       }
     }
 
-    // Hotbar selection via Digit Keys 1-9 & Mouse Wheel
-    if (this.input.selectedHotbarDigit !== null) {
-      this.hud.inventorySystem.selectHotbarSlot(this.input.selectedHotbarDigit, (item) => {
-        if (this.player && item && item.type === 'WEAPON') {
-          this.player.equipWeapon(item.name, item.value);
-        }
-      });
-    }
-
-    if (this.input.wheelScrollDelta !== 0) {
-      let nextIndex = this.hud.inventorySystem.selectedHotbarIndex + this.input.wheelScrollDelta;
-      if (nextIndex < 0) nextIndex = 8;
-      if (nextIndex > 8) nextIndex = 0;
-      this.hud.inventorySystem.selectHotbarSlot(nextIndex, (item) => {
-        if (this.player && item && item.type === 'WEAPON') {
-          this.player.equipWeapon(item.name, item.value);
-        }
-      });
-    }
-
     // Handle Inventory Toggle (Tab Key)
     if (this.input.inventoryToggleRequested) {
-      this.hud.inventoryUI.toggle();
-      if (this.hud.inventorySystem.isOpen) {
-        this.input.exitPointerLock();
-      } else {
-        this.input.requestPointerLock();
-      }
+      this.hud.dadUI.toggle();
+      this.input.exitPointerLock();
     }
 
-    // Pause player movement & combat updates while Inventory, Full Map, Victory, or Death is active!
+    // Update Action Progress Bar when drinking potion / bandaging
+    if (this.player.isUsingConsumable) {
+      this.hud.dadUI.showProgress(this.player.consumableProgress / 1.4);
+    } else {
+      this.hud.dadUI.showProgress(0);
+    }
+
+    // Pause player movement & combat updates while Full Map, Victory, or Death is active!
     const isUIModalOpen =
-      this.hud.inventorySystem.isOpen ||
       this.hud.fullMapUI.isOpen ||
       this.isDungeonCleared ||
       this.player.health.isDead;
