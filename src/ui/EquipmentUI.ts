@@ -1,9 +1,20 @@
 import { EquipmentSystem } from '../systems/EquipmentSystem';
 import { EventBus } from '../core/EventBus';
 
+export interface PlayerStatsRef {
+  vigor: number;
+  agility: number;
+  dexterity: number;
+  health: { current: number; max: number };
+  stamina: number;
+  maxStamina: number;
+  attackPower: number;
+}
+
 export class EquipmentUI {
   private parent: HTMLElement;
   private equipment: EquipmentSystem;
+  private playerStats: PlayerStatsRef | null = null;
   private beltBarContainer!: HTMLElement;
   private modalOverlay!: HTMLElement;
   private gridContainer!: HTMLElement;
@@ -18,6 +29,11 @@ export class EquipmentUI {
     this.buildUI();
     this.registerEvents();
     this.render();
+  }
+
+  /** Link player stats reference for Tab menu display */
+  public setPlayerStats(stats: PlayerStatsRef): void {
+    this.playerStats = stats;
   }
 
   private buildUI(): void {
@@ -139,6 +155,92 @@ export class EquipmentUI {
       equipSection.appendChild(slotsRow);
 
       this.gridContainer.appendChild(equipSection);
+
+      // ── Character Stats Section ──
+      if (this.playerStats) {
+        const statsSection = document.createElement('div');
+        statsSection.className = 'hud-equip-section';
+
+        const statsTitle = document.createElement('div');
+        statsTitle.className = 'hud-equip-section-title';
+        statsTitle.textContent = 'Character Attributes';
+        statsSection.appendChild(statsTitle);
+
+        const statsGrid = document.createElement('div');
+        statsGrid.className = 'hud-stats-grid';
+
+        // Main stats with derived values
+        const statEntries: { name: string; icon: string; value: number; color: string; desc: string }[] = [
+          {
+            name: 'VIGOR',
+            icon: '❤️',
+            value: this.playerStats.vigor,
+            color: '#e53e3e',
+            desc: `Max HP: ${Math.floor(80 + this.playerStats.vigor * 10)}`
+          },
+          {
+            name: 'AGILITY',
+            icon: '⚡',
+            value: this.playerStats.agility,
+            color: '#3182ce',
+            desc: `Move Speed: ${(2.8 + this.playerStats.agility * 0.05).toFixed(1)}`
+          },
+          {
+            name: 'DEXTERITY',
+            icon: '🗡️',
+            value: this.playerStats.dexterity,
+            color: '#ecc94b',
+            desc: `Swing Speed: ${(1.8 + this.playerStats.dexterity * 0.05).toFixed(1)}`
+          }
+        ];
+
+        statEntries.forEach(stat => {
+          const statCard = document.createElement('div');
+          statCard.className = 'hud-stat-card';
+
+          const statIcon = document.createElement('div');
+          statIcon.className = 'hud-stat-card-icon';
+          statIcon.textContent = stat.icon;
+          statCard.appendChild(statIcon);
+
+          const statInfo = document.createElement('div');
+          statInfo.className = 'hud-stat-card-info';
+
+          const statName = document.createElement('div');
+          statName.className = 'hud-stat-card-name';
+          statName.textContent = stat.name;
+          statInfo.appendChild(statName);
+
+          const statVal = document.createElement('div');
+          statVal.className = 'hud-stat-card-value';
+          statVal.style.color = stat.color;
+          statVal.textContent = `${stat.value}`;
+          statInfo.appendChild(statVal);
+
+          const statDesc = document.createElement('div');
+          statDesc.className = 'hud-stat-card-desc';
+          statDesc.textContent = stat.desc;
+          statInfo.appendChild(statDesc);
+
+          statCard.appendChild(statInfo);
+          statsGrid.appendChild(statCard);
+        });
+
+        statsSection.appendChild(statsGrid);
+
+        // Derived combat stats summary
+        const combatRow = document.createElement('div');
+        combatRow.className = 'hud-combat-stats-row';
+        combatRow.innerHTML = `
+          <span class="hud-combat-stat"><b>ATK:</b> ${this.playerStats.attackPower}</span>
+          <span class="hud-combat-stat"><b>HP:</b> ${Math.ceil(this.playerStats.health.current)}/${this.playerStats.health.max}</span>
+          <span class="hud-combat-stat"><b>STA:</b> ${Math.ceil(this.playerStats.stamina)}/${this.playerStats.maxStamina}</span>
+          <span class="hud-combat-stat"><b>DEF:</b> ${this.equipment.weapon2 ? '85%' : '0%'}</span>
+        `;
+        statsSection.appendChild(combatRow);
+
+        this.gridContainer.appendChild(statsSection);
+      }
 
       const stashSection = document.createElement('div');
       stashSection.className = 'hud-equip-section';

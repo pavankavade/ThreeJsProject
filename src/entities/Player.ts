@@ -14,6 +14,11 @@ export class Player extends Entity {
   public maxStamina: number = 100;
   public attackPower: number = 25;
 
+  // Character Stats
+  public vigor: number = 10;
+  public agility: number = 8;
+  public dexterity: number = 12;
+
   public equipment: EquipmentSystem;
 
   private input: InputManager;
@@ -37,16 +42,27 @@ export class Player extends Entity {
   private potionMesh!: THREE.Group;
   private weaponGlowLight: THREE.PointLight | null = null;
 
-  // Attack, Block & Consumable states
+  // Combo Attack System
   private isAttacking: boolean = false;
   private attackProgress: number = 0;
   private attackCooldown: number = 0;
+  private comboStep: number = 0;           // 0=R→L, 1=L→R, 2=Up→Down
+  private comboResetTimer: number = 0;     // Time window to chain next combo
+  private comboQueued: boolean = false;    // Whether next swing is queued
+  private readonly comboWindowDuration: number = 0.8;  // seconds to chain
+  private readonly swingSpeed: number = 2.2;           // slower than old 4.0
+
+  // Block state
   private wasBlocking: boolean = false;
 
   // Consumable Action Timer
   public isUsingConsumable: boolean = false;
-  public consumableProgress: number = 0; // 0 to 1.4s
+  public consumableProgress: number = 0;
   private readonly consumableDuration: number = 1.4;
+
+  // Rest position for sword
+  private readonly swordRestPos = new THREE.Vector3(0.35, -0.3, -0.5);
+  private readonly swordRestRot = new THREE.Euler(0.2, -0.3, 0);
 
   constructor(camera: THREE.PerspectiveCamera, input: InputManager, collision: CollisionSystem) {
     super('Player');
@@ -66,27 +82,17 @@ export class Player extends Entity {
   }
 
   private createViewmodels(): void {
-    // 1. Left Hand: Heater Shield
-    const shieldWoodMat = new THREE.MeshStandardMaterial({ color: 0x3d2514, roughness: 0.6 });
-    const shieldRimMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.8, roughness: 0.3 });
-
+    // 1. Left Hand: Heater Shield (triangular/kite shape)
     this.shieldMesh = new THREE.Group();
-    const shieldGeo = new THREE.BoxGeometry(0.45, 0.6, 0.05);
-    const shieldBase = new THREE.Mesh(shieldGeo, shieldWoodMat);
-
-    const rimGeo = new THREE.BoxGeometry(0.48, 0.63, 0.06);
-    const shieldRim = new THREE.Mesh(rimGeo, shieldRimMat);
-    shieldRim.position.set(0, 0, -0.005);
-    this.shieldMesh.add(shieldBase, shieldRim);
-
+    this.buildHeaterShield();
     this.shieldMesh.position.set(-0.4, -0.35, -0.45);
     this.shieldMesh.rotation.set(0.1, 0.4, -0.1);
     this.viewmodelGroup.add(this.shieldMesh);
 
-    // 2. Right Hand: Sword Container
+    // 2. Right Hand: Sword Container (Falchion)
     this.swordMesh = new THREE.Group();
-    this.swordMesh.position.set(0.35, -0.3, -0.5);
-    this.swordMesh.rotation.set(0.2, -0.3, 0);
+    this.swordMesh.position.copy(this.swordRestPos);
+    this.swordMesh.rotation.copy(this.swordRestRot);
     this.viewmodelGroup.add(this.swordMesh);
 
     // 3. Right Hand: Potion / Bandage Container
@@ -96,6 +102,115 @@ export class Player extends Entity {
     this.viewmodelGroup.add(this.potionMesh);
 
     this.updateActiveHandViewmodel();
+  }
+
+  /** Build a proper heater shield shape: flat top, tapers to a point at the bottom */
+  private buildHeaterShield(): void {
+    this.shieldMesh.clear();
+
+    // Heater shield outline shape
+    const shieldShape = new THREE.Shape();
+    const w = 0.22;   // half-width
+    const h = 0.6;    // total height
+    // Start at top-left corner
+    shieldShape.moveTo(-w, h * 0.5);
+    // Flat top edge
+    shieldShape.lineTo(w, h * 0.5);
+    // Right side curves down to point
+    shieldShape.quadraticCurveTo(w * 1.05, 0, 0, -h * 0.5);
+    // Left side curves back up from point
+    shieldShape.quadraticCurveTo(-w * 1.05, 0, -w, h * 0.5);
+
+    const extrudeSettings = { depth: 0.04, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.005, bevelSegments: 2 };
+
+    // Wood backing
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d2514, roughness: 0.65, metalness: 0.1 });
+    const shieldBody = new THREE.Mesh(new THREE.ExtrudeGeometry(shieldShape, extrudeSettings), woodMat);
+    this.shieldMesh.add(shieldBody);
+
+    // Metallic gold rim (slightly larger)
+    const rimShape = new THREE.Shape();
+    const rw = w + 0.015;
+    const rh = h + 0.02;
+    rimShape.moveTo(-rw, rh * 0.5);
+    rimShape.lineTo(rw, rh * 0.5);
+    rimShape.quadraticCurveTo(rw * 1.05, 0, 0, -rh * 0.5);
+    rimShape.quadraticCurveTo(-rw * 1.05, 0, -rw, rh * 0.5);
+
+    const rimSettings = { depth: 0.045, bevelEnabled: false };
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.85, roughness: 0.25 });
+    const rim = new THREE.Mesh(new THREE.ExtrudeGeometry(rimShape, rimSettings), rimMat);
+    rim.position.set(0, 0, -0.003);
+    this.shieldMesh.add(rim);
+
+    // Central boss (circle emblem)
+    const bossMat = new THREE.MeshStandardMaterial({ color: 0xd4a846, metalness: 0.9, roughness: 0.2 });
+    const bossGeo = new THREE.CylinderGeometry(0.055, 0.055, 0.025, 16);
+    const boss = new THREE.Mesh(bossGeo, bossMat);
+    boss.rotation.x = Math.PI / 2;
+    boss.position.set(0, 0.05, 0.05);
+    this.shieldMesh.add(boss);
+
+    // Cross emblem on shield face (vertical bar + horizontal bar)
+    const crossMat = new THREE.MeshStandardMaterial({ color: 0xd4a846, metalness: 0.85, roughness: 0.3 });
+    const vertBar = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.3, 0.01), crossMat);
+    vertBar.position.set(0, 0.05, 0.055);
+    const horizBar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.01), crossMat);
+    horizBar.position.set(0, 0.12, 0.055);
+    this.shieldMesh.add(vertBar, horizBar);
+  }
+
+  /** Build a curved falchion blade using ExtrudeGeometry */
+  private buildFalchionBlade(bladeMat: THREE.MeshStandardMaterial, guardMat: THREE.MeshStandardMaterial, scale: number = 1.0): void {
+    this.swordMesh.clear();
+
+    if (this.weaponGlowLight) {
+      this.weaponGlowLight.dispose();
+      this.weaponGlowLight = null;
+    }
+
+    // Falchion blade shape: narrow at hilt, widens toward tip, single curved edge
+    const bladeShape = new THREE.Shape();
+    const bLen = 0.8 * scale;  // blade length
+    // Spine (back/straight edge) on the right, cutting edge (curved) on the left
+    bladeShape.moveTo(0, 0);                              // base center
+    bladeShape.lineTo(0.025 * scale, 0);                  // base right (spine side)
+    bladeShape.lineTo(0.03 * scale, bLen * 0.7);          // spine stays relatively straight
+    bladeShape.lineTo(0.02 * scale, bLen * 0.95);         // tip narrows slightly
+    bladeShape.lineTo(0, bLen);                            // tip point
+    bladeShape.lineTo(-0.02 * scale, bLen * 0.9);         // cutting edge widens near tip
+    bladeShape.quadraticCurveTo(-0.045 * scale, bLen * 0.5, -0.025 * scale, 0); // curved cutting edge back to base
+
+    const extrudeSettings = {
+      depth: 0.012 * scale,
+      bevelEnabled: true,
+      bevelThickness: 0.003,
+      bevelSize: 0.002,
+      bevelSegments: 1
+    };
+
+    const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, extrudeSettings), bladeMat);
+    blade.position.set(0, 0.02, -0.006 * scale); // position above guard
+    this.swordMesh.add(blade);
+
+    // Crossguard
+    const guardGeo = new THREE.BoxGeometry(0.22 * scale, 0.035 * scale, 0.045 * scale);
+    const guard = new THREE.Mesh(guardGeo, guardMat);
+    guard.position.set(0, 0.01, 0);
+    this.swordMesh.add(guard);
+
+    // Handle/grip (wrapped leather look)
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a, roughness: 0.9, metalness: 0.05 });
+    const handleGeo = new THREE.CylinderGeometry(0.02 * scale, 0.022 * scale, 0.18 * scale, 8);
+    const handle = new THREE.Mesh(handleGeo, handleMat);
+    handle.position.set(0, -0.1, 0);
+    this.swordMesh.add(handle);
+
+    // Pommel (round end cap)
+    const pommelGeo = new THREE.SphereGeometry(0.025 * scale, 8, 6);
+    const pommel = new THREE.Mesh(pommelGeo, guardMat);
+    pommel.position.set(0, -0.2, 0);
+    this.swordMesh.add(pommel);
   }
 
   private registerEquipmentEvents(): void {
@@ -116,7 +231,7 @@ export class Player extends Entity {
       if (activeItem && activeItem.type === 'WEAPON') {
         this.equipWeaponMesh(activeItem.name, activeItem.value);
       } else {
-        this.equipWeaponMesh('Iron Longsword', 25);
+        this.equipWeaponMesh('Iron Falchion', 25);
       }
     } else {
       // Slot 3 or 4: Consumable mode (Potion or Bandage)
@@ -154,21 +269,17 @@ export class Player extends Entity {
 
   private equipWeaponMesh(name: string, atkPower: number): void {
     this.attackPower = atkPower;
-    this.swordMesh.clear();
-
-    if (this.weaponGlowLight) {
-      this.weaponGlowLight.dispose();
-      this.weaponGlowLight = null;
-    }
 
     let bladeMat: THREE.MeshStandardMaterial;
     let guardMat: THREE.MeshStandardMaterial;
-    let bladeGeo = new THREE.BoxGeometry(0.06, 0.85, 0.02);
+    let scale = 1.0;
 
     if (name.includes('Flame')) {
       bladeMat = new THREE.MeshStandardMaterial({ color: 0xff3300, roughness: 0.2, metalness: 0.9, emissive: 0xff2200, emissiveIntensity: 0.8 });
       guardMat = new THREE.MeshStandardMaterial({ color: 0x441100, metalness: 0.9 });
-      bladeGeo = new THREE.BoxGeometry(0.09, 0.95, 0.025);
+      scale = 1.15;
+
+      this.buildFalchionBlade(bladeMat, guardMat, scale);
 
       this.weaponGlowLight = new THREE.PointLight(0xff4400, 1.5, 3);
       this.weaponGlowLight.position.set(0, 0.5, 0);
@@ -177,6 +288,8 @@ export class Player extends Entity {
       bladeMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.2, metalness: 0.9, emissive: 0xffaa00, emissiveIntensity: 0.4 });
       guardMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.9 });
 
+      this.buildFalchionBlade(bladeMat, guardMat);
+
       this.weaponGlowLight = new THREE.PointLight(0xffdd22, 1.2, 3);
       this.weaponGlowLight.position.set(0, 0.5, 0);
       this.swordMesh.add(this.weaponGlowLight);
@@ -184,34 +297,28 @@ export class Player extends Entity {
       bladeMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.1, metalness: 0.95, emissive: 0x0088ff, emissiveIntensity: 0.6 });
       guardMat = new THREE.MeshStandardMaterial({ color: 0x004488, metalness: 0.9 });
 
+      this.buildFalchionBlade(bladeMat, guardMat);
+
       this.weaponGlowLight = new THREE.PointLight(0x00e5ff, 1.2, 3);
       this.weaponGlowLight.position.set(0, 0.5, 0);
       this.swordMesh.add(this.weaponGlowLight);
     } else if (name.includes('Shadow') || name.includes('Dagger')) {
       bladeMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.2, metalness: 0.95, emissive: 0x8800ff, emissiveIntensity: 0.5 });
       guardMat = new THREE.MeshStandardMaterial({ color: 0x220044, metalness: 0.9 });
-      bladeGeo = new THREE.BoxGeometry(0.04, 0.55, 0.015);
+      scale = 0.7;
+
+      this.buildFalchionBlade(bladeMat, guardMat, scale);
 
       this.weaponGlowLight = new THREE.PointLight(0xaa00ff, 1.0, 2);
       this.weaponGlowLight.position.set(0, 0.3, 0);
       this.swordMesh.add(this.weaponGlowLight);
     } else {
+      // Default: Iron Falchion
       bladeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.2 });
       guardMat = new THREE.MeshStandardMaterial({ color: 0x442211, roughness: 0.7 });
+
+      this.buildFalchionBlade(bladeMat, guardMat);
     }
-
-    const blade = new THREE.Mesh(bladeGeo, bladeMat);
-    blade.position.set(0, 0.425, 0);
-
-    const guardGeo = new THREE.BoxGeometry(0.25, 0.04, 0.06);
-    const guard = new THREE.Mesh(guardGeo, guardMat);
-    guard.position.set(0, 0, 0);
-
-    const handleGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.2);
-    const handle = new THREE.Mesh(handleGeo, guardMat);
-    handle.position.set(0, -0.1, 0);
-
-    this.swordMesh.add(blade, guard, handle);
   }
 
   public updatePlayer(delta: number, enemies: CollisionTarget[]): void {
@@ -288,18 +395,38 @@ export class Player extends Entity {
   private handleCombat(delta: number, enemies: CollisionTarget[]): void {
     if (this.equipment.activeSlot !== 1 && this.equipment.activeSlot !== 2) return;
 
+    // Tick down attack cooldown
     if (this.attackCooldown > 0) {
       this.attackCooldown -= delta;
     }
 
-    if (this.input.attackRequested && !this.isAttacking && this.attackCooldown <= 0 && this.stamina >= 15) {
+    // Combo reset timer - if window expires without another click, reset combo
+    if (!this.isAttacking && this.comboStep > 0) {
+      this.comboResetTimer -= delta;
+      if (this.comboResetTimer <= 0) {
+        this.comboStep = 0;
+        this.comboQueued = false;
+      }
+    }
+
+    // Queue a swing if player clicks during an active swing (for combo chaining)
+    if (this.input.attackRequested && this.isAttacking && !this.comboQueued) {
+      this.comboQueued = true;
+    }
+
+    // Start a new swing
+    const canStartSwing = !this.isAttacking && this.attackCooldown <= 0 && this.stamina >= 15;
+    const wantsToSwing = this.input.attackRequested || this.comboQueued;
+
+    if (wantsToSwing && canStartSwing) {
       this.isAttacking = true;
       this.attackProgress = 0;
-      this.attackCooldown = 0.55;
+      this.comboQueued = false;
       this.stamina -= 15;
       EventBus.emit('PLAYER_STAMINA_CHANGE', { current: this.stamina, max: this.maxStamina });
       EventBus.emit('PLAYER_ATTACK_SWING');
 
+      // Hit detection at swing start
       const camDir = new THREE.Vector3();
       this.camera.getWorldDirection(camDir);
       const hitEnemies = this.collision.getEntitiesInArc(this.transform.position, camDir, 2.4, 80, enemies);
@@ -311,21 +438,70 @@ export class Player extends Entity {
       });
     }
 
+    // Animate the active swing
     if (this.isAttacking) {
-      this.attackProgress += delta * 4.0;
+      this.attackProgress += delta * this.swingSpeed;
+
+      // Mouse influence - swing tracks slight mouse movement
+      const mouseInfluence = this.input.mouseDeltaX * 0.0008;
+
       if (this.attackProgress >= 1.0) {
+        // Swing finished
         this.isAttacking = false;
-        this.swordMesh.position.set(0.35, -0.3, -0.5);
-        this.swordMesh.rotation.set(0.2, -0.3, 0);
+        this.swordMesh.position.copy(this.swordRestPos);
+        this.swordMesh.rotation.copy(this.swordRestRot);
+
+        // Advance combo
+        this.comboStep = (this.comboStep + 1) % 3;
+
+        if (this.comboStep === 0) {
+          // Combo finished (all 3 swings done), longer recovery
+          this.attackCooldown = 0.7;
+          this.comboResetTimer = 0;
+        } else {
+          // Mid-combo, short cooldown, start combo window timer
+          this.attackCooldown = 0.12;
+          this.comboResetTimer = this.comboWindowDuration;
+        }
       } else {
-        const swing = Math.sin(this.attackProgress * Math.PI);
-        this.swordMesh.position.x = 0.35 - swing * 0.5;
-        this.swordMesh.position.z = -0.5 + swing * 0.2;
-        this.swordMesh.rotation.z = -swing * 1.5;
-        this.swordMesh.rotation.y = -0.3 - swing * 0.8;
+        // Progress bell curve (smooth ease in-out)
+        const t = Math.sin(this.attackProgress * Math.PI);
+
+        if (this.comboStep === 0) {
+          // ── Swing 1: Right → Left horizontal slash ──
+          this.swordMesh.position.x = 0.55 - t * 0.7 + mouseInfluence;
+          this.swordMesh.position.y = -0.3 + t * 0.05;
+          this.swordMesh.position.z = -0.5 + t * 0.15;
+          this.swordMesh.rotation.z = -t * 1.2;
+          this.swordMesh.rotation.y = -0.3 - t * 0.6;
+          this.swordMesh.rotation.x = 0.2;
+        } else if (this.comboStep === 1) {
+          // ── Swing 2: Left → Right horizontal slash ──
+          this.swordMesh.position.x = -0.2 + t * 0.7 + mouseInfluence;
+          this.swordMesh.position.y = -0.3 + t * 0.05;
+          this.swordMesh.position.z = -0.5 + t * 0.15;
+          this.swordMesh.rotation.z = t * 1.2;
+          this.swordMesh.rotation.y = -0.3 + t * 0.6;
+          this.swordMesh.rotation.x = 0.2;
+        } else {
+          // ── Swing 3: Overhead vertical chop (Up → Down) ──
+          this.swordMesh.position.x = 0.35 + mouseInfluence;
+          this.swordMesh.position.y = -0.3 + (1 - t) * 0.55;
+          this.swordMesh.position.z = -0.5 + t * 0.25;
+          this.swordMesh.rotation.x = 0.2 + (1 - t) * 1.5;
+          this.swordMesh.rotation.z = 0;
+          this.swordMesh.rotation.y = -0.3;
+        }
       }
+    } else {
+      // Not attacking: lerp sword back to rest position
+      this.swordMesh.position.lerp(this.swordRestPos, delta * 8);
+      this.swordMesh.rotation.x = THREE.MathUtils.lerp(this.swordMesh.rotation.x, this.swordRestRot.x, delta * 8);
+      this.swordMesh.rotation.y = THREE.MathUtils.lerp(this.swordMesh.rotation.y, this.swordRestRot.y, delta * 8);
+      this.swordMesh.rotation.z = THREE.MathUtils.lerp(this.swordMesh.rotation.z, this.swordRestRot.z, delta * 8);
     }
 
+    // Shield blocking animation
     const targetShieldPos = this.input.isBlocking
       ? new THREE.Vector3(-0.1, -0.2, -0.35)
       : new THREE.Vector3(-0.4, -0.35, -0.45);

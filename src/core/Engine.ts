@@ -84,6 +84,9 @@ export class Engine {
     this.player = new Player(this.camera, this.input, this.collision);
     this.hud = new HUD(this.player.equipment);
 
+    // Link player stats to equipment UI for Tab menu display
+    this.hud.equipUI.setPlayerStats(this.player);
+
     // Register particle and event handlers
     EventBus.on('ENEMY_HIT', (data: { position: THREE.Vector3 }) => {
       if (data && data.position) {

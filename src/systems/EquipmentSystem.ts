@@ -6,9 +6,9 @@ export type ActiveSlotType = 1 | 2 | 3 | 4;
 export class EquipmentSystem {
   // Slot 1: Primary Weapon
   public weapon1: LootItem | null = {
-    name: "Iron Longsword",
+    name: "Iron Falchion",
     type: 'WEAPON',
-    description: "Standard Steel Blade (+25 ATK)",
+    description: "Standard Steel Curved Blade (+25 ATK)",
     value: 25
   };
 
