@@ -131,15 +131,17 @@ export class EquipmentUI {
     this.paperdollScene.add(this.paperdollModel.group);
   }
 
+  public isOpen: boolean = false;
+
   public toggle(): void {
-    const isCurrentlyOpen = !this.modalOverlay.classList.contains('hidden');
-    if (isCurrentlyOpen) {
+    this.isOpen = !this.isOpen;
+    if (this.isOpen) {
+      this.modalOverlay.classList.remove('hidden');
+      this.start3DLoop();
+    } else {
       this.modalOverlay.classList.add('hidden');
       this.tooltipEl.classList.add('hidden');
       this.stop3DLoop();
-    } else {
-      this.modalOverlay.classList.remove('hidden');
-      this.start3DLoop();
     }
     this.render();
   }

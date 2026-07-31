@@ -78,7 +78,11 @@ export class InputManager {
       }
     });
 
-    window.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.domElement.addEventListener('click', () => {
+      if (!this.pointerLocked) {
+        this.requestPointerLock();
+      }
+    });
 
     document.addEventListener('pointerlockchange', () => {
       this.pointerLocked = document.pointerLockElement === this.domElement;

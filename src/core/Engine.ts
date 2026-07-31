@@ -168,7 +168,11 @@ export class Engine {
     // Handle Inventory Toggle (Tab Key)
     if (this.input.inventoryToggleRequested) {
       this.hud.equipUI.toggle();
-      this.input.exitPointerLock();
+      if (this.hud.equipUI.isOpen) {
+        this.input.exitPointerLock();
+      } else {
+        this.input.requestPointerLock();
+      }
     }
 
     // Update Action Progress Bar when drinking potion / bandaging
@@ -178,9 +182,10 @@ export class Engine {
       this.hud.equipUI.showProgress(0);
     }
 
-    // Pause player movement & combat updates while Full Map, Victory, or Death is active!
+    // Pause player movement & combat updates while Full Map, Equipment Modal, Victory, or Death is active!
     const isUIModalOpen =
       this.hud.fullMapUI.isOpen ||
+      this.hud.equipUI.isOpen ||
       this.isDungeonCleared ||
       this.player.health.isDead;
 
