@@ -12,15 +12,19 @@ export class Minimap {
     const container = document.createElement('div');
     container.className = 'hud-minimap-card';
 
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas = document.createElement('canvas');
-    this.canvas.width = this.size;
-    this.canvas.height = this.size;
+    this.canvas.width = this.size * dpr;
+    this.canvas.height = this.size * dpr;
+    this.canvas.style.width = `${this.size}px`;
+    this.canvas.style.height = `${this.size}px`;
     this.canvas.className = 'hud-minimap-canvas';
 
     container.appendChild(this.canvas);
     parent.appendChild(container);
 
     this.ctx = this.canvas.getContext('2d')!;
+    this.ctx.scale(dpr, dpr);
   }
 
   public render(
@@ -69,13 +73,13 @@ export class Minimap {
 
         const char = map.grid[r][c];
         if (char === 'W') {
-          ctx.fillStyle = '#262a34';
+          ctx.fillStyle = '#1c2333';
           ctx.fillRect(screenX - tileSizePx / 2, screenY - tileSizePx / 2, tileSizePx, tileSizePx);
-          ctx.strokeStyle = '#181a20';
+          ctx.strokeStyle = '#2d384e';
           ctx.lineWidth = 1;
           ctx.strokeRect(screenX - tileSizePx / 2, screenY - tileSizePx / 2, tileSizePx, tileSizePx);
         } else {
-          ctx.fillStyle = '#12151c';
+          ctx.fillStyle = '#0f141e';
           ctx.fillRect(screenX - tileSizePx / 2, screenY - tileSizePx / 2, tileSizePx, tileSizePx);
         }
       }
@@ -86,6 +90,9 @@ export class Minimap {
       const screenX = center + (map.exitPosition.x - playerPos.x) * scale;
       const screenY = center + (map.exitPosition.z - playerPos.z) * scale;
 
+      ctx.save();
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 8;
       ctx.fillStyle = '#00f0ff';
       ctx.fillRect(screenX - 16, screenY - 8, 32, 16);
 
@@ -93,10 +100,11 @@ export class Minimap {
       ctx.fillRect(screenX - 14, screenY - 6, 28, 12);
 
       ctx.fillStyle = '#00f0ff';
-      ctx.font = 'bold 9px sans-serif';
+      ctx.font = 'bold 9px "Inter", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('EXIT', screenX, screenY);
+      ctx.restore();
     }
 
     // Draw Chests
