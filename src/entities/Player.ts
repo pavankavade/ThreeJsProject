@@ -456,33 +456,41 @@ export class Player extends Entity {
           this.swordMesh.rotation.copy(this.swordRestRot);
         }
       } else {
-        // Smooth interpolation parameter p (0 to 1)
+        // Smooth interpolation parameter p (0 to 1) and forward thrust factor
         const p = Math.min(1.0, this.attackProgress);
+        const thrust = Math.sin(p * Math.PI); // Peak forward extension at mid-swing
 
         if (this.comboStep === 0) {
-          // ── Swing 1: Right → Left horizontal slash ──
-          this.swordMesh.position.x = 0.45 - p * 0.9 + this.mouseSwingX;
-          this.swordMesh.position.y = -0.15 - Math.sin(p * Math.PI) * 0.12 + this.mouseSwingY;
-          this.swordMesh.position.z = -0.4 + Math.sin(p * Math.PI) * 0.15;
-          this.swordMesh.rotation.x = 0.2 - Math.sin(p * Math.PI) * 0.3;
-          this.swordMesh.rotation.y = -0.8 + p * 1.6;
-          this.swordMesh.rotation.z = -0.5 + p * 1.5;
+          // ── Swing 1: 3D Diagonal Slash (Right → Left with Forward Z-Thrust) ──
+          // Winds back right (p=0), drives deep forward in Z (-0.70!), follows through left (p=1.0)
+          this.swordMesh.position.x = 0.48 - p * 0.95 + this.mouseSwingX;
+          this.swordMesh.position.y = -0.12 - thrust * 0.18 + this.mouseSwingY;
+          this.swordMesh.position.z = -0.38 - thrust * 0.32; // Deep 3D forward extension
+
+          // Blade rotational leaning forward & across 3D space
+          this.swordMesh.rotation.x = 0.5 - thrust * 0.95; // Leans blade forward into depth
+          this.swordMesh.rotation.y = -1.1 + p * 2.0;       // Rotates blade across 3D view
+          this.swordMesh.rotation.z = -0.6 + p * 1.8;
         } else if (this.comboStep === 1) {
-          // ── Swing 2: Left → Right horizontal backslash ──
-          this.swordMesh.position.x = -0.45 + p * 0.9 + this.mouseSwingX;
-          this.swordMesh.position.y = -0.15 - Math.sin(p * Math.PI) * 0.12 + this.mouseSwingY;
-          this.swordMesh.position.z = -0.4 + Math.sin(p * Math.PI) * 0.15;
-          this.swordMesh.rotation.x = 0.2 - Math.sin(p * Math.PI) * 0.3;
-          this.swordMesh.rotation.y = 0.8 - p * 1.6;
-          this.swordMesh.rotation.z = 0.8 - p * 1.6;
+          // ── Swing 2: 3D Backslash (Left → Right with Forward Z-Thrust) ──
+          // Winds back left (p=0), drives deep forward in Z (-0.70!), follows through right (p=1.0)
+          this.swordMesh.position.x = -0.45 + p * 0.95 + this.mouseSwingX;
+          this.swordMesh.position.y = -0.12 - thrust * 0.18 + this.mouseSwingY;
+          this.swordMesh.position.z = -0.38 - thrust * 0.32; // Deep 3D forward extension
+
+          this.swordMesh.rotation.x = 0.5 - thrust * 0.95; // Leans blade forward into depth
+          this.swordMesh.rotation.y = 0.9 - p * 2.0;        // Rotates back across 3D view
+          this.swordMesh.rotation.z = 0.7 - p * 1.8;
         } else {
-          // ── Swing 3: Overhead vertical downward chop ──
-          this.swordMesh.position.x = 0.15 - p * 0.15 + this.mouseSwingX;
-          this.swordMesh.position.y = 0.3 - p * 0.75 + this.mouseSwingY;
-          this.swordMesh.position.z = -0.35 + p * 0.1;
-          this.swordMesh.rotation.x = 1.2 - p * 1.9;
+          // ── Swing 3: 3D Heavy Overhead Downward Chop (Thrusting Forward & Down) ──
+          // Raised high (p=0), chops straight down & forward into Z space (-0.72!)
+          this.swordMesh.position.x = 0.12 - p * 0.12 + this.mouseSwingX;
+          this.swordMesh.position.y = 0.32 - p * 0.8 + this.mouseSwingY;
+          this.swordMesh.position.z = -0.32 - thrust * 0.40; // Drives forward toward crosshair
+
+          this.swordMesh.rotation.x = 1.3 - p * 2.2; // Slams blade down & leaning forward
           this.swordMesh.rotation.y = -0.15;
-          this.swordMesh.rotation.z = 0.1 - p * 0.2;
+          this.swordMesh.rotation.z = 0.15 - p * 0.3;
         }
       }
     } else {
