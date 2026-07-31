@@ -4,6 +4,7 @@ export class InputManager {
   
   public mouseDeltaX: number = 0;
   public mouseDeltaY: number = 0;
+  public isMouseDownLeft: boolean = false;
   public attackRequested: boolean = false;
   public interactRequested: boolean = false;
   public jumpRequested: boolean = false;
@@ -40,7 +41,7 @@ export class InputManager {
         this.mapToggleRequested = true;
       }
 
-      // Dark and Darker Slot Keys 1, 2, 3, 4
+      // Slot Keys 1, 2, 3, 4
       if (e.code === 'Digit1') this.slotKey1Pressed = true;
       if (e.code === 'Digit2') this.slotKey2Pressed = true;
       if (e.code === 'Digit3') this.slotKey3Pressed = true;
@@ -59,16 +60,20 @@ export class InputManager {
     });
 
     window.addEventListener('mousedown', (e) => {
-      if (!this.pointerLocked) return;
-      if (e.button === 0) { // Left click
-        this.attackRequested = true;
-      } else if (e.button === 2) { // Right click
+      if (e.button === 0) { // Left click down
+        this.isMouseDownLeft = true;
+        if (this.pointerLocked) {
+          this.attackRequested = true;
+        }
+      } else if (e.button === 2 && this.pointerLocked) { // Right click
         this.isBlocking = true;
       }
     });
 
     window.addEventListener('mouseup', (e) => {
-      if (e.button === 2) {
+      if (e.button === 0) { // Left click up
+        this.isMouseDownLeft = false;
+      } else if (e.button === 2) {
         this.isBlocking = false;
       }
     });

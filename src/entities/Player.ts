@@ -45,7 +45,7 @@ export class Player extends Entity {
 
   // Consumable Action Timer
   public isUsingConsumable: boolean = false;
-  public consumableProgress: number = 0; // 0 to 1.5s
+  public consumableProgress: number = 0; // 0 to 1.4s
   private readonly consumableDuration: number = 1.4;
 
   constructor(camera: THREE.PerspectiveCamera, input: InputManager, collision: CollisionSystem) {
@@ -357,7 +357,8 @@ export class Player extends Entity {
       return;
     }
 
-    if (this.input.isKeyDown('MouseLeft') || this.input.attackRequested) {
+    // Check continuous left click hold state!
+    if (this.input.isMouseDownLeft || this.input.attackRequested) {
       this.isUsingConsumable = true;
       this.consumableProgress += delta;
 
