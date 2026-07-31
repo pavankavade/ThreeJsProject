@@ -215,14 +215,137 @@ canvas {
 }
 
 .hud-equip-card {
-  width: 720px;
-  max-height: 85vh;
+  width: 900px;
+  max-height: 90vh;
   overflow-y: auto;
   background: #141722;
   border: 3px solid #00f0ff;
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 0 35px rgba(0, 240, 255, 0.3);
+}
+
+/* --- 3-Column Equipment & 3D Paperdoll Layout --- */
+.hud-equip-grid-layout {
+  display: grid;
+  grid-template-columns: 210px 220px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.hud-equip-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- 3D Paperdoll Viewport --- */
+.hud-paperdoll-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hud-paperdoll-viewport {
+  width: 220px;
+  height: 320px;
+  background: radial-gradient(circle at center, #1a2332 0%, #0a0d14 100%);
+  border: 2px solid #00f0ff;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.hud-paperdoll-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hud-armor-rating-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 240, 255, 0.2);
+  border: 1px solid #00f0ff;
+  color: #00f0ff;
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+
+/* --- Armor Slot Cards --- */
+.hud-armor-slots-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hud-armor-slot-card {
+  background: #0e121a;
+  border: 1px solid #2d3748;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-armor-slot-card:hover {
+  border-color: #00f0ff;
+  background: #161c28;
+}
+
+.hud-armor-slot-card.filled {
+  border-color: rgba(0, 240, 255, 0.5);
+  background: rgba(0, 240, 255, 0.08);
+}
+
+.hud-armor-slot-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #00f0ff;
+  letter-spacing: 1px;
+}
+
+.hud-armor-slot-value {
+  font-size: 0.78rem;
+  color: #e2e8f0;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Compact Stats Cards --- */
+.hud-stats-grid-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hud-stat-card-compact {
+  background: #0e121b;
+  border: 1px solid #2d3748;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  color: #cbd5e0;
+}
+
+.hud-stat-card-compact .icon {
+  margin-right: 4px;
+}
+
+.hud-tooltip-hint {
+  font-size: 0.7rem;
+  color: #ecc94b;
+  margin-top: 4px;
+  font-style: italic;
 }
 
 .hud-equip-header {
