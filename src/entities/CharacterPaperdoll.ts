@@ -43,11 +43,11 @@ export class CharacterPaperdoll {
     const loader = new GLTFLoader();
 
     loader.load(
-      '/models/soldier.glb',
+      '/models/knight.glb',
       (gltf) => {
         const model = gltf.scene;
-        model.scale.set(0.9, 0.9, 0.9);
-        model.position.set(0, -0.7, 0);
+        model.scale.set(0.8, 0.8, 0.8);
+        model.position.set(0, -0.65, 0);
 
         // Enhance materials for dark fantasy aesthetic
         model.traverse((child) => {
