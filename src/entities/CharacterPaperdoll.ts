@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import type { EquipmentSystem } from '../systems/EquipmentSystem';
+import { EquipmentSystem } from '../systems/EquipmentSystem';
+import { WeaponFactory } from '../factories/WeaponFactory';
 
 export class CharacterPaperdoll {
   public group: THREE.Group;
@@ -306,67 +307,39 @@ export class CharacterPaperdoll {
     this.glovesArmorGroup.add(glove);
   }
 
+  // Attack Animation Synchronization Fields
+  public isAttacking: boolean = false;
+  public attackProgress: number = 0;
+  public comboStep: number = 0;
+
   private buildWeaponAndShield(): void {
     this.weaponGroup.clear();
     this.shieldGroup.clear();
 
-    // Weapon in Right Hand (3D Falchion)
-    const weapon = this.equipment.weapon1;
+    // Falchion Weapon in Right Hand
+    const weapon = this.equipment.weapon1 || { name: 'Iron Falchion', value: 25 };
     if (weapon) {
-      const bladeMat = new THREE.MeshStandardMaterial({ color: 0xddddee, metalness: 0.92, roughness: 0.2 });
-      const guardMat = new THREE.MeshStandardMaterial({ color: 0x442211, roughness: 0.7 });
+      let bladeColor = 0xddddee;
+      let guardColor = 0x442211;
 
-      const bladeShape = new THREE.Shape();
-      bladeShape.moveTo(0, 0);
-      bladeShape.lineTo(0.025, 0);
-      bladeShape.lineTo(0.03, 0.55);
-      bladeShape.lineTo(0, 0.6);
-      bladeShape.lineTo(-0.035, 0.4);
-      bladeShape.quadraticCurveTo(-0.03, 0.2, -0.025, 0);
+      if (weapon.name.includes('Flame')) { bladeColor = 0xff4411; guardColor = 0x882200; }
+      else if (weapon.name.includes('Gold') || weapon.name.includes('Paladin')) { bladeColor = 0xffd700; guardColor = 0x886600; }
+      else if (weapon.name.includes('Elven') || weapon.name.includes('Mithril')) { bladeColor = 0x88ffee; guardColor = 0x006666; }
+      else if (weapon.name.includes('Shadow') || weapon.name.includes('Dagger')) { bladeColor = 0x443355; guardColor = 0x110022; }
 
-      const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: 0.012 }), bladeMat);
-      blade.position.set(0, 0.02, -0.006);
+      const bladeMat = new THREE.MeshStandardMaterial({ color: bladeColor, metalness: 0.85, roughness: 0.25 });
+      const guardMat = new THREE.MeshStandardMaterial({ color: guardColor, metalness: 0.7, roughness: 0.3 });
 
-      const guard = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.035, 0.045), guardMat);
-      guard.position.set(0, 0.01, 0);
-
-      const handleMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a, roughness: 0.9 });
-      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.022, 0.18, 8), handleMat);
-      handle.position.set(0, -0.1, 0);
-
-      const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), guardMat);
-      pommel.position.set(0, -0.2, 0);
-
-      this.weaponGroup.add(blade, guard, handle, pommel);
+      const falchion = WeaponFactory.buildFalchionMesh(bladeMat, guardMat, 1.0, false);
+      this.weaponGroup.add(falchion);
       this.weaponGroup.scale.set(0.65, 0.65, 0.65);
     }
 
     // Heater Shield in Left Hand
     const shield = this.equipment.weapon2;
     if (shield) {
-      const shieldShape = new THREE.Shape();
-      const w = 0.2, h = 0.52;
-      shieldShape.moveTo(-w, h * 0.5);
-      shieldShape.lineTo(w, h * 0.5);
-      shieldShape.quadraticCurveTo(w * 1.05, 0, 0, -h * 0.5);
-      shieldShape.quadraticCurveTo(-w * 1.05, 0, -w, h * 0.5);
-
-      const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d2514, roughness: 0.65 });
-      const rimMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.85, roughness: 0.25 });
-      const bossMat = new THREE.MeshStandardMaterial({ color: 0xd4a846, metalness: 0.9, roughness: 0.2 });
-
-      const shieldMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shieldShape, { depth: 0.03 }), woodMat);
-      
-      const rim = new THREE.Mesh(new THREE.ExtrudeGeometry(shieldShape, { depth: 0.035 }), rimMat);
-      rim.scale.set(1.05, 1.05, 1.0);
-      rim.position.set(0, 0, -0.002);
-
-      const bossGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.02, 16);
-      const boss = new THREE.Mesh(bossGeo, bossMat);
-      boss.rotation.x = Math.PI / 2;
-      boss.position.set(0, 0.05, 0.04);
-
-      this.shieldGroup.add(shieldMesh, rim, boss);
+      const heaterShield = WeaponFactory.buildHeaterShieldMesh(false);
+      this.shieldGroup.add(heaterShield);
       this.shieldGroup.scale.set(0.6, 0.6, 0.6);
     }
   }
@@ -376,12 +349,44 @@ export class CharacterPaperdoll {
       this.mixer.update(delta);
     }
 
-    // Override arm bone rotations AFTER mixer update so arms hold sword & shield raised matching 1st person stance
-    if (this.rightArmBone) {
-      this.rightArmBone.rotation.set(-1.2, 0.4, 0.5, 'YXZ');
-    }
-    if (this.rightForeArmBone) {
-      this.rightForeArmBone.rotation.set(0, 0.9, 0, 'YXZ');
+    // Apply Arm Stance or Attack Swing Animation
+    if (this.isAttacking) {
+      const p = Math.min(1.0, this.attackProgress);
+      const thrust = Math.sin(p * Math.PI);
+
+      if (this.comboStep === 0) {
+        // Swing 1: Right -> Left Slash
+        if (this.rightArmBone) {
+          this.rightArmBone.rotation.set(-1.4 + thrust * 0.4, 0.8 - p * 1.8, 0.4, 'YXZ');
+        }
+        if (this.rightForeArmBone) {
+          this.rightForeArmBone.rotation.set(0, 0.6 + thrust * 0.5, 0, 'YXZ');
+        }
+      } else if (this.comboStep === 1) {
+        // Swing 2: Left -> Right Slash
+        if (this.rightArmBone) {
+          this.rightArmBone.rotation.set(-1.4 + thrust * 0.4, -0.8 + p * 1.8, 0.4, 'YXZ');
+        }
+        if (this.rightForeArmBone) {
+          this.rightForeArmBone.rotation.set(0, 0.6 + thrust * 0.5, 0, 'YXZ');
+        }
+      } else {
+        // Swing 3: Overhead Chop
+        if (this.rightArmBone) {
+          this.rightArmBone.rotation.set(-2.2 + p * 2.4, 0.2, 0.2, 'YXZ');
+        }
+        if (this.rightForeArmBone) {
+          this.rightForeArmBone.rotation.set(0, 0.3 + (1 - thrust) * 0.5, 0, 'YXZ');
+        }
+      }
+    } else {
+      // Ready Guard Stance
+      if (this.rightArmBone) {
+        this.rightArmBone.rotation.set(-1.2, 0.4, 0.5, 'YXZ');
+      }
+      if (this.rightForeArmBone) {
+        this.rightForeArmBone.rotation.set(0, 0.9, 0, 'YXZ');
+      }
     }
 
     if (this.leftArmBone) {
