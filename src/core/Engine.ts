@@ -82,7 +82,13 @@ export class Engine {
 
   private spawnWorldEntities(): void {
     this.player = new Player(this.camera, this.input, this.collision);
+    if (this.player.mesh) {
+      this.scene.add(this.player.mesh);
+    }
     this.hud = new HUD(this.player.equipment);
+
+    // Link player stats to equipment UI for Tab menu display
+    this.hud.equipUI.setPlayerStats(this.player);
 
     // Register particle and event handlers
     EventBus.on('ENEMY_HIT', (data: { position: THREE.Vector3 }) => {
@@ -165,7 +171,11 @@ export class Engine {
     // Handle Inventory Toggle (Tab Key)
     if (this.input.inventoryToggleRequested) {
       this.hud.equipUI.toggle();
-      this.input.exitPointerLock();
+      if (this.hud.equipUI.isOpen) {
+        this.input.exitPointerLock();
+      } else {
+        this.input.requestPointerLock();
+      }
     }
 
     // Update Action Progress Bar when drinking potion / bandaging
@@ -175,9 +185,10 @@ export class Engine {
       this.hud.equipUI.showProgress(0);
     }
 
-    // Pause player movement & combat updates while Full Map, Victory, or Death is active!
+    // Pause player movement & combat updates while Full Map, Equipment Modal, Victory, or Death is active!
     const isUIModalOpen =
       this.hud.fullMapUI.isOpen ||
+      this.hud.equipUI.isOpen ||
       this.isDungeonCleared ||
       this.player.health.isDead;
 
