@@ -307,10 +307,11 @@ export class CharacterPaperdoll {
     this.glovesArmorGroup.add(glove);
   }
 
-  // Attack Animation Synchronization Fields
+  // Action Synchronization Fields
   public isAttacking: boolean = false;
   public attackProgress: number = 0;
   public comboStep: number = 0;
+  public isBlocking: boolean = false;
 
   private buildWeaponAndShield(): void {
     this.weaponGroup.clear();
@@ -389,11 +390,21 @@ export class CharacterPaperdoll {
       }
     }
 
-    if (this.leftArmBone) {
-      this.leftArmBone.rotation.set(-1.1, -0.4, -0.4, 'YXZ');
-    }
-    if (this.leftForeArmBone) {
-      this.leftForeArmBone.rotation.set(0, -0.9, 0, 'YXZ');
+    // Left Arm & Shield Action Stance (Shield Blocking vs Guard Stance)
+    if (this.isBlocking) {
+      if (this.leftArmBone) {
+        this.leftArmBone.rotation.set(-1.6, 0.5, -0.6, 'YXZ');
+      }
+      if (this.leftForeArmBone) {
+        this.leftForeArmBone.rotation.set(0, -1.2, 0, 'YXZ');
+      }
+    } else {
+      if (this.leftArmBone) {
+        this.leftArmBone.rotation.set(-1.1, -0.4, -0.4, 'YXZ');
+      }
+      if (this.leftForeArmBone) {
+        this.leftForeArmBone.rotation.set(0, -0.9, 0, 'YXZ');
+      }
     }
 
     // Dynamic real-time hand bone tracking for 3D Falchion & Heater Shield

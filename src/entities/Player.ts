@@ -375,6 +375,12 @@ export class Player extends Entity {
   private handleCombat(delta: number, enemies: CollisionTarget[]): void {
     if (this.equipment.activeSlot !== 1 && this.equipment.activeSlot !== 2) return;
 
+    // Synchronize 3D attack & shield blocking actions to 3rd-person character model
+    this.worldCharacter.isAttacking = this.isAttacking;
+    this.worldCharacter.attackProgress = this.attackProgress;
+    this.worldCharacter.comboStep = this.comboStep;
+    this.worldCharacter.isBlocking = this.input.isBlocking;
+
     // Tick down attack recovery cooldown
     if (this.attackCooldown > 0) {
       this.attackCooldown -= delta;
