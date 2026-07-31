@@ -1,4 +1,4 @@
-content = """# Three.js Dungeon Crawler Project
+"""# Three.js Dungeon Crawler Project
 
 A 3D web-based game or engine project built with [Three.js](https://threejs.org/) and [TypeScript](https://www.typescriptlang.org/), bundled using Vite.
 
