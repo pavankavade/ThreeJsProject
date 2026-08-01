@@ -279,16 +279,7 @@ export class Player extends Entity {
 
     if (moveDir.lengthSq() > 0) {
       moveDir.normalize();
-      
-      // Compute movement angle (in 3rd person, match camera's actual line-of-sight for 100% straight W movement)
-      let moveYaw = this.yaw;
-      if (this.isThirdPerson) {
-        const camDir = new THREE.Vector3();
-        this.camera.getWorldDirection(camDir);
-        moveYaw = Math.atan2(-camDir.x, -camDir.z);
-      }
-
-      moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), moveYaw);
+      moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
 
       this.transform.position.x += moveDir.x * speed * delta;
       this.transform.position.z += moveDir.z * speed * delta;
@@ -336,10 +327,9 @@ export class Player extends Entity {
 
     // Camera positioning based on view mode (1st Person vs 3rd Person)
     if (this.isThirdPerson) {
-      // Sekiro over-the-right-shoulder 3rd Person camera offset (X = +0.75 for clear right arm & weapon view)
-      const smoothPitch = Math.max(-0.2, Math.min(0.4, this.pitch * 0.4));
-      const desiredDist = 2.6;
-      const rawOffset = new THREE.Vector3(0.75, 0.75, desiredDist);
+      // Sekiro AAA over-the-shoulder 3rd Person Camera (parallel sightline alignment!)
+      const smoothPitch = Math.max(-0.25, Math.min(0.45, this.pitch));
+      const rawOffset = new THREE.Vector3(0.5, 0.5, 2.5);
       rawOffset.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
 
       const headPos = this.transform.position.clone();
@@ -353,9 +343,11 @@ export class Player extends Entity {
       const safeOffset = rayDir.multiplyScalar(safeDist);
       this.camera.position.copy(headPos).add(safeOffset);
 
-      // Target lookAt point: upper chest / horizon target
-      const lookTarget = this.transform.position.clone().add(new THREE.Vector3(0, 0.35, 0));
-      this.camera.lookAt(lookTarget);
+      // AAA Parallel Sightline: look parallel along (smoothPitch, yaw) toward horizon target ahead!
+      const aimForward = new THREE.Vector3(0, 0, -100);
+      aimForward.applyEuler(new THREE.Euler(smoothPitch, this.yaw, 0, 'YXZ'));
+      const aimTarget = this.camera.position.clone().add(aimForward);
+      this.camera.lookAt(aimTarget);
 
       // Position & rotate 3D world character mesh to face movement direction
       if (this.mesh) {
