@@ -17,7 +17,7 @@ export interface TorchLight {
 
 export class DungeonMap {
   public static readonly TILE_SIZE = 3;
-  public static readonly WALL_HEIGHT = 4;
+  public static readonly WALL_HEIGHT = 6; // 6m high vaulted crypt ceilings
 
   public gridWidth: number = 0;
   public gridHeight: number = 0;
@@ -32,28 +32,28 @@ export class DungeonMap {
   private ceilingInstancedMesh!: THREE.InstancedMesh;
   private torches: TorchLight[] = [];
 
-  // Dungeon ASCII Map layout with Exit Portal 'X' in bottom right chamber
+  // 2x2 Modular Crypt Map Layout (Each section is 24m x 24m, total 48m x 48m world area!)
+  // Section (0,0): Entrance & Grand Tomb (Top Left)
+  // Section (1,0): Armory & Treasury Vault (Top Right)
+  // Section (0,1): Charnel Pillar Catacombs (Bottom Left)
+  // Section (1,1): Sanctuary Altar & Exit Portal (Bottom Right)
   private defaultMapLayout = [
-    "WWWWWWWWWWWWWWWWWWWW",
-    "W.P....W.......S...W",
-    "W.WWWW.W.WWWWWWWWW.W",
-    "W.W....W.W.......W.W",
-    "W.W.C..W.W.WWWWW.W.W",
-    "W.WWWWWW.W.W...W.W.W",
-    "W........W.W.C.W.W.W",
-    "WWWWWWWW.W.WWWWW.W.W",
-    "W........W.......W.W",
-    "W.WWWWWWWWWWWWWW.W.W",
-    "W.W....S.......W.W.W",
-    "W.W.WWWWWWWWWW.W.W.W",
-    "W.W.W...C....W.W.W.W",
-    "W.W.W.WWWWWW.W.W.W.W",
-    "W...W.W....W...W...W",
-    "WWW.W.W.S..WWWWWWW.W",
-    "W...W.W....W.....W.W",
-    "W.C.W.WWWWWW.S.C.W.W",
-    "W...W..........X.W.W",
-    "WWWWWWWWWWWWWWWWWWWW"
+    "WWWWWWWWWWWWWWWW",
+    "W..P...W.......W",
+    "W......W...C...W",
+    "W..S...W.......W",
+    "W......W...S...W",
+    "W......W.......W",
+    "W......W...C...W",
+    "WWW..WWWWWW..WWW",
+    "WWW..WWWWWW..WWW",
+    "W......W.......W",
+    "W..S...W.......W",
+    "W......W...S...W",
+    "W......W.......W",
+    "W..S...W...C...W",
+    "W......W.....X.W",
+    "WWWWWWWWWWWWWWWW"
   ];
 
   constructor(scene: THREE.Scene) {
@@ -123,8 +123,8 @@ export class DungeonMap {
     });
 
     const ceilingMat = new THREE.MeshStandardMaterial({
-      color: 0x3a3e4a,
-      roughness: 0.7
+      color: 0x222630,
+      roughness: 0.8
     });
 
     this.wallInstancedMesh = new THREE.InstancedMesh(wallGeo, wallMat, wallCount);
@@ -155,7 +155,7 @@ export class DungeonMap {
           dummy.updateMatrix();
           this.floorInstancedMesh.setMatrixAt(floorIndex, dummy.matrix);
 
-          // Ceiling
+          // Vaulted Ceiling
           dummy.position.set(x, DungeonMap.WALL_HEIGHT, z);
           dummy.rotation.set(Math.PI / 2, 0, 0);
           dummy.updateMatrix();
@@ -181,31 +181,31 @@ export class DungeonMap {
     const portalGroup = new THREE.Group();
     portalGroup.position.copy(this.exitPosition);
 
-    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x2d3436, roughness: 0.7, metalness: 0.3 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x232730, roughness: 0.7, metalness: 0.3 });
     const vortexMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
 
-    // Stone Archway Pillars
-    const pillarGeo = new THREE.BoxGeometry(0.4, 3.2, 0.4);
+    // Grand Archway Pillars
+    const pillarGeo = new THREE.BoxGeometry(0.5, 4.2, 0.5);
     const pillarL = new THREE.Mesh(pillarGeo, stoneMat);
-    pillarL.position.set(-1.1, 1.6, 0);
+    pillarL.position.set(-1.4, 2.1, 0);
     const pillarR = new THREE.Mesh(pillarGeo, stoneMat);
-    pillarR.position.set(1.1, 1.6, 0);
+    pillarR.position.set(1.4, 2.1, 0);
 
-    const lintelGeo = new THREE.BoxGeometry(2.6, 0.4, 0.5);
+    const lintelGeo = new THREE.BoxGeometry(3.3, 0.5, 0.6);
     const lintel = new THREE.Mesh(lintelGeo, stoneMat);
-    lintel.position.set(0, 3.2, 0);
+    lintel.position.set(0, 4.2, 0);
 
     portalGroup.add(pillarL, pillarR, lintel);
 
     // Swirling Magical Vortex Disk
-    const vortexGeo = new THREE.CircleGeometry(1.0, 16);
+    const vortexGeo = new THREE.CircleGeometry(1.3, 24);
     this.exitVortexMesh = new THREE.Mesh(vortexGeo, vortexMat);
-    this.exitVortexMesh.position.set(0, 1.6, 0);
+    this.exitVortexMesh.position.set(0, 2.1, 0);
     portalGroup.add(this.exitVortexMesh);
 
     // Glowing Exit Beacon Point Light
-    const exitLight = new THREE.PointLight(0x00f0ff, 4.5, 14, 1.2);
-    exitLight.position.set(0, 1.6, 0.2);
+    const exitLight = new THREE.PointLight(0x00f0ff, 5.0, 18, 1.2);
+    exitLight.position.set(0, 2.1, 0.2);
     portalGroup.add(exitLight);
 
     this.scene.add(portalGroup);
@@ -219,42 +219,37 @@ export class DungeonMap {
     for (let r = 1; r < this.gridHeight - 1; r += 2) {
       for (let c = 1; c < this.gridWidth - 1; c += 2) {
         if (this.grid[r][c] !== 'W') {
-          // Check adjacent walls to attach torch to wall face!
           let torchPos: THREE.Vector3 | null = null;
           let normalRotY = 0;
 
-          if (this.grid[r - 1][c] === 'W') { // North Wall
-            torchPos = new THREE.Vector3(c * DungeonMap.TILE_SIZE, 2.3, r * DungeonMap.TILE_SIZE - DungeonMap.TILE_SIZE / 2 + 0.15);
+          if (this.grid[r - 1][c] === 'W') {
+            torchPos = new THREE.Vector3(c * DungeonMap.TILE_SIZE, 3.2, r * DungeonMap.TILE_SIZE - DungeonMap.TILE_SIZE / 2 + 0.15);
             normalRotY = 0;
-          } else if (this.grid[r + 1][c] === 'W') { // South Wall
-            torchPos = new THREE.Vector3(c * DungeonMap.TILE_SIZE, 2.3, r * DungeonMap.TILE_SIZE + DungeonMap.TILE_SIZE / 2 - 0.15);
+          } else if (this.grid[r + 1][c] === 'W') {
+            torchPos = new THREE.Vector3(c * DungeonMap.TILE_SIZE, 3.2, r * DungeonMap.TILE_SIZE + DungeonMap.TILE_SIZE / 2 - 0.15);
             normalRotY = Math.PI;
-          } else if (this.grid[r][c - 1] === 'W') { // West Wall
-            torchPos = new THREE.Vector3(c * DungeonMap.TILE_SIZE - DungeonMap.TILE_SIZE / 2 + 0.15, 2.3, r * DungeonMap.TILE_SIZE);
+          } else if (this.grid[r][c - 1] === 'W') {
+            torchPos = new THREE.Vector3(c * DungeonMap.TILE_SIZE - DungeonMap.TILE_SIZE / 2 + 0.15, 3.2, r * DungeonMap.TILE_SIZE);
             normalRotY = -Math.PI / 2;
-          } else if (this.grid[r][c + 1] === 'W') { // East Wall
-            torchPos = new THREE.Vector3(c * DungeonMap.TILE_SIZE + DungeonMap.TILE_SIZE / 2 - 0.15, 2.3, r * DungeonMap.TILE_SIZE);
+          } else if (this.grid[r][c + 1] === 'W') {
+            torchPos = new THREE.Vector3(c * DungeonMap.TILE_SIZE + DungeonMap.TILE_SIZE / 2 - 0.15, 3.2, r * DungeonMap.TILE_SIZE);
             normalRotY = Math.PI / 2;
           }
 
           if (torchPos) {
             const torchGroup = new THREE.Group();
 
-            // Wall Bracket Mount
-            const mountPlate = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.04), ironMat);
-            mountPlate.position.set(0, 0, 0);
-
-            const sconceArm = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.25), ironMat);
+            const mountPlate = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.3, 0.05), ironMat);
+            const sconceArm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), ironMat);
             sconceArm.rotation.x = Math.PI / 3;
-            sconceArm.position.set(0, -0.05, 0.1);
+            sconceArm.position.set(0, -0.05, 0.12);
 
-            const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.025, 0.4), woodMat);
-            handle.position.set(0, 0.1, 0.2);
+            const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.03, 0.45), woodMat);
+            handle.position.set(0, 0.1, 0.22);
 
-            // Glowing Flame Cone
-            const flameGeo = new THREE.ConeGeometry(0.09, 0.22, 6);
+            const flameGeo = new THREE.ConeGeometry(0.1, 0.25, 6);
             const flameMesh = new THREE.Mesh(flameGeo, flameMat);
-            flameMesh.position.set(0, 0.32, 0.2);
+            flameMesh.position.set(0, 0.35, 0.22);
             flameMesh.rotation.x = Math.PI;
 
             torchGroup.add(mountPlate, sconceArm, handle, flameMesh);
@@ -263,10 +258,9 @@ export class DungeonMap {
 
             this.scene.add(torchGroup);
 
-            // Bright Point Light
-            const baseIntensity = 3.5;
-            const torchLight = new THREE.PointLight(0xffaa33, baseIntensity, 14, 1.4);
-            torchLight.position.set(torchPos.x, torchPos.y + 0.3, torchPos.z);
+            const baseIntensity = 4.0;
+            const torchLight = new THREE.PointLight(0xffaa33, baseIntensity, 16, 1.4);
+            torchLight.position.set(torchPos.x, torchPos.y + 0.35, torchPos.z);
             this.scene.add(torchLight);
 
             this.torches.push({
@@ -287,7 +281,6 @@ export class DungeonMap {
     const lanternMat = new THREE.MeshStandardMaterial({ color: 0x443322, metalness: 0.7, roughness: 0.4 });
     const crystalMat = new THREE.MeshBasicMaterial({ color: 0xffee99 });
 
-    // Place ceiling lanterns across the dungeon grid
     for (let r = 2; r < this.gridHeight - 2; r += 4) {
       for (let c = 2; c < this.gridWidth - 2; c += 4) {
         if (this.grid[r][c] !== 'W') {
@@ -297,66 +290,29 @@ export class DungeonMap {
           const lanternGroup = new THREE.Group();
           lanternGroup.position.set(x, DungeonMap.WALL_HEIGHT, z);
 
-          // Hanging Iron Chain
-          const chainGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.8);
+          const chainGeo = new THREE.CylinderGeometry(0.025, 0.025, 1.4);
           const chain = new THREE.Mesh(chainGeo, chainMat);
-          chain.position.set(0, -0.4, 0);
+          chain.position.set(0, -0.7, 0);
           lanternGroup.add(chain);
 
-          // Octagonal Lantern Frame
-          const lanternGeo = new THREE.CylinderGeometry(0.18, 0.14, 0.35, 8);
+          const lanternGeo = new THREE.CylinderGeometry(0.22, 0.16, 0.4, 8);
           const lanternFrame = new THREE.Mesh(lanternGeo, lanternMat);
-          lanternFrame.position.set(0, -0.95, 0);
+          lanternFrame.position.set(0, -1.6, 0);
           lanternGroup.add(lanternFrame);
 
-          // Glowing Crystal Core
-          const crystalGeo = new THREE.OctahedronGeometry(0.1);
+          const crystalGeo = new THREE.OctahedronGeometry(0.12);
           const crystal = new THREE.Mesh(crystalGeo, crystalMat);
-          crystal.position.set(0, -0.95, 0);
+          crystal.position.set(0, -1.6, 0);
           lanternGroup.add(crystal);
 
           this.scene.add(lanternGroup);
 
-          // Bright Ceiling Point Light casting illumination down
-          const ceilingLight = new THREE.PointLight(0xffe099, 4.0, 16, 1.2);
-          ceilingLight.position.set(x, DungeonMap.WALL_HEIGHT - 1.0, z);
+          const ceilingLight = new THREE.PointLight(0xffe099, 4.5, 18, 1.2);
+          ceilingLight.position.set(x, DungeonMap.WALL_HEIGHT - 1.6, z);
           this.scene.add(ceilingLight);
         }
       }
     }
-  }
-
-  public updateTorches(time: number): void {
-    // Dynamic soft flickering light animation
-    this.torches.forEach((t) => {
-      const noise = Math.sin(time * t.flickerSpeed + t.timeOffset) * 0.3 + Math.cos(time * t.flickerSpeed * 2.1) * 0.15;
-      t.light.intensity = t.baseIntensity + noise;
-      t.flameMesh.scale.set(1 + noise * 0.2, 1 + noise * 0.3, 1 + noise * 0.2);
-    });
-
-    // Rotate exit portal vortex
-    if (this.exitVortexMesh) {
-      this.exitVortexMesh.rotation.z = time * 1.5;
-    }
-  }
-
-  public isWallAtWorld(x: number, z: number, padding = 0.4): boolean {
-    const minC = Math.floor((x - padding) / DungeonMap.TILE_SIZE);
-    const maxC = Math.floor((x + padding) / DungeonMap.TILE_SIZE);
-    const minR = Math.floor((z - padding) / DungeonMap.TILE_SIZE);
-    const maxR = Math.floor((z + padding) / DungeonMap.TILE_SIZE);
-
-    for (let r = minR; r <= maxR; r++) {
-      for (let c = minC; c <= maxC; c++) {
-        if (r < 0 || r >= this.gridHeight || c < 0 || c >= this.gridWidth) {
-          return true; // Out of bounds is wall
-        }
-        if (this.grid[r][c] === 'W') {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 
   private spawnCryptProps(): void {
@@ -371,7 +327,7 @@ export class DungeonMap {
           const x = c * DungeonMap.TILE_SIZE;
           const z = r * DungeonMap.TILE_SIZE;
 
-          // 1. Spawn Ancient Stone Sarcophagus along alcoves
+          // 1. Spawn Ancient Stone Sarcophagi along alcoves
           if (r % 3 === 0 && c % 3 === 0) {
             let alignRot = 0;
             let offset = new THREE.Vector3(0, 0, 0);
@@ -387,18 +343,15 @@ export class DungeonMap {
               sarcGroup.position.set(x + offset.x, 0, z + offset.z);
               sarcGroup.rotation.y = alignRot;
 
-              // Sarcophagus Base Box
               const baseBox = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.55, 1.7), stoneMat);
               baseBox.position.set(0, 0.275, 0);
               baseBox.castShadow = true;
 
-              // Carved Stone Lid with Beveled Relief
               const lidBox = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.14, 1.8), lidMat);
               lidBox.position.set(0, 0.62, 0);
               lidBox.rotation.z = Math.random() > 0.5 ? 0.04 : 0;
               lidBox.castShadow = true;
 
-              // Cross emblem on lid
               const crossMat = new THREE.MeshStandardMaterial({ color: 0x555b6a, metalness: 0.5, roughness: 0.5 });
               const vRelief = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, 0.9), crossMat);
               vRelief.position.set(0, 0.70, 0);
@@ -415,14 +368,12 @@ export class DungeonMap {
             const boneGroup = new THREE.Group();
             boneGroup.position.set(x + (Math.random() - 0.5) * 1.2, 0, z + (Math.random() - 0.5) * 1.2);
 
-            // Skull geometry
             const skullHead = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), boneMat);
             skullHead.position.set(0, 0.09, 0);
             const skullJaw = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.07), boneMat);
             skullJaw.position.set(0, 0.04, 0.03);
             boneGroup.add(skullHead, skullJaw);
 
-            // Scattered femur bones
             for (let b = 0; b < 3; b++) {
               const boneMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 6), boneMat);
               boneMesh.position.set((Math.random() - 0.5) * 0.3, 0.02, (Math.random() - 0.5) * 0.3);
@@ -433,39 +384,34 @@ export class DungeonMap {
             this.scene.add(boneGroup);
           }
 
-          // 3. Spawn Fluted Crypt Pillars at corridor corners
+          // 3. Spawn Fluted Crypt Pillars at section centers & corners
           if (r % 4 === 0 && c % 4 === 0) {
             const pillarGroup = new THREE.Group();
             pillarGroup.position.set(x, 0, z);
 
-            // Square Plinth Base
-            const basePlinth = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.28, 0.6), stoneMat);
-            basePlinth.position.set(0, 0.14, 0);
+            const basePlinth = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.7), stoneMat);
+            basePlinth.position.set(0, 0.175, 0);
 
-            // Fluted Shaft Column
-            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, DungeonMap.WALL_HEIGHT - 0.56, 12), stoneMat);
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, DungeonMap.WALL_HEIGHT - 0.7, 12), stoneMat);
             shaft.position.set(0, DungeonMap.WALL_HEIGHT / 2, 0);
 
-            // Carved Capital Top
-            const capitalTop = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.28, 0.6), stoneMat);
-            capitalTop.position.set(0, DungeonMap.WALL_HEIGHT - 0.14, 0);
+            const capitalTop = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.7), stoneMat);
+            capitalTop.position.set(0, DungeonMap.WALL_HEIGHT - 0.175, 0);
 
             pillarGroup.add(basePlinth, shaft, capitalTop);
             this.scene.add(pillarGroup);
           }
 
-          // 4. Spawn Hanging Spiked Cages from Ceiling
+          // 4. Spawn Hanging Spiked Cages from Vaulted Ceiling
           if (r % 7 === 0 && c % 7 === 0) {
             const cageGroup = new THREE.Group();
             cageGroup.position.set(x, DungeonMap.WALL_HEIGHT, z);
 
-            // Hanging Iron Chain
-            const chainMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 1.2, 6), ironMat);
-            chainMesh.position.set(0, -0.6, 0);
+            const chainMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.8, 6), ironMat);
+            chainMesh.position.set(0, -0.9, 0);
 
-            // Spiked Iron Cage Frame
-            const cageBody = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.85, 8, 1, true), ironMat);
-            cageBody.position.set(0, -1.6, 0);
+            const cageBody = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.95, 8, 1, true), ironMat);
+            cageBody.position.set(0, -2.2, 0);
 
             cageGroup.add(chainMesh, cageBody);
             this.scene.add(cageGroup);
@@ -473,5 +419,36 @@ export class DungeonMap {
         }
       }
     }
+  }
+
+  public updateTorches(time: number): void {
+    this.torches.forEach((t) => {
+      const noise = Math.sin(time * t.flickerSpeed + t.timeOffset) * 0.35 + Math.cos(time * t.flickerSpeed * 2.1) * 0.18;
+      t.light.intensity = t.baseIntensity + noise;
+      t.flameMesh.scale.set(1 + noise * 0.2, 1 + noise * 0.3, 1 + noise * 0.2);
+    });
+
+    if (this.exitVortexMesh) {
+      this.exitVortexMesh.rotation.z = time * 1.5;
+    }
+  }
+
+  public isWallAtWorld(x: number, z: number, padding = 0.4): boolean {
+    const minC = Math.floor((x - padding) / DungeonMap.TILE_SIZE);
+    const maxC = Math.floor((x + padding) / DungeonMap.TILE_SIZE);
+    const minR = Math.floor((z - padding) / DungeonMap.TILE_SIZE);
+    const maxR = Math.floor((z + padding) / DungeonMap.TILE_SIZE);
+
+    for (let r = minR; r <= maxR; r++) {
+      for (let c = minC; c <= maxC; c++) {
+        if (r < 0 || r >= this.gridHeight || c < 0 || c >= this.gridWidth) {
+          return true;
+        }
+        if (this.grid[r][c] === 'W') {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
