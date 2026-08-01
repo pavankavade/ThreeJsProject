@@ -62,13 +62,13 @@ export class Engine {
   }
 
   private initScene(): void {
-    this.scene.background = new THREE.Color(0x1a1d26);
-    this.scene.fog = new THREE.FogExp2(0x1a1d26, 0.03);
+    this.scene.background = new THREE.Color(0x0a0c10);
+    this.scene.fog = new THREE.FogExp2(0x0a0c10, 0.05);
 
-    const ambientLight = new THREE.AmbientLight(0x667799, 2.2);
+    const ambientLight = new THREE.AmbientLight(0x2a3040, 1.3);
     this.scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x8899bb, 1.5);
+    const dirLight = new THREE.DirectionalLight(0x556688, 1.0);
     dirLight.position.set(10, 20, 10);
     this.scene.add(dirLight);
 
@@ -227,7 +227,7 @@ export class Engine {
 
     this.chests.forEach((c) => c.update(delta));
 
-    this.particles.update(delta);
+    this.particles.update(delta, elapsedTime);
     this.map.updateTorches(elapsedTime);
 
     this.hud.minimap.render(

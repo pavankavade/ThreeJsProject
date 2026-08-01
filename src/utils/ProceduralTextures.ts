@@ -7,12 +7,12 @@ export class ProceduralTextures {
     canvas.height = 512;
     const ctx = canvas.getContext('2d')!;
 
-    // Base dark granite background
-    ctx.fillStyle = '#1c1e24';
+    // Base dark granite crypt mortar background
+    ctx.fillStyle = '#0f1115';
     ctx.fillRect(0, 0, 512, 512);
 
-    // Brick / Stone Block grid
-    const rows = 12;
+    // Weathered Crypt Stone Blocks
+    const rows = 14;
     const cols = 6;
     const brickH = 512 / rows;
     const brickW = 512 / cols;
@@ -23,34 +23,39 @@ export class ProceduralTextures {
         const x = c * brickW + offsetX;
         const y = r * brickH;
 
-        // Block color variation (slate, charcoal, dark moss)
-        const baseShade = 35 + Math.floor(Math.random() * 25);
-        ctx.fillStyle = `rgb(${baseShade}, ${baseShade + 5}, ${baseShade + 12})`;
+        // Aged crypt granite color variation
+        const baseShade = 24 + Math.floor(Math.random() * 22);
+        const rColor = baseShade + Math.floor(Math.random() * 6);
+        const gColor = baseShade + 4 + Math.floor(Math.random() * 8);
+        const bColor = baseShade + 10 + Math.floor(Math.random() * 10);
+        ctx.fillStyle = `rgb(${rColor}, ${gColor}, ${bColor})`;
         ctx.fillRect(x + 3, y + 3, brickW - 6, brickH - 6);
 
         // Bevel highlight top & left edge
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
         ctx.fillRect(x + 3, y + 3, brickW - 6, 2);
         ctx.fillRect(x + 3, y + 3, 2, brickH - 6);
 
-        // Shadow bottom & right edge
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        // Dark ambient occlusion shadow on bottom & right mortar seams
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
         ctx.fillRect(x + 3, y + brickH - 5, brickW - 6, 2);
         ctx.fillRect(x + brickW - 5, y + 3, 2, brickH - 6);
 
-        // Texture noise / stone pitting
-        for (let n = 0; n < 30; n++) {
+        // Stone grain & micro cracks
+        for (let n = 0; n < 35; n++) {
           const nx = x + 3 + Math.random() * (brickW - 6);
           const ny = y + 3 + Math.random() * (brickH - 6);
-          const noise = Math.floor(Math.random() * 50);
-          ctx.fillStyle = `rgba(${noise}, ${noise + 10}, ${noise + 20}, 0.2)`;
+          const noise = Math.floor(Math.random() * 40);
+          ctx.fillStyle = `rgba(${noise}, ${noise + 6}, ${noise + 12}, 0.25)`;
           ctx.fillRect(nx, ny, 2, 2);
         }
 
-        // Moss green patches at bottom bricks
-        if (r > 8 && Math.random() > 0.5) {
-          ctx.fillStyle = 'rgba(25, 55, 30, 0.35)';
-          ctx.fillRect(x + 3, y + brickH - 12, brickW - 6, 9);
+        // Damp catacomb moss & lichen patches on bottom blocks
+        if (r > 6 && Math.random() > 0.4) {
+          ctx.fillStyle = 'rgba(18, 48, 25, 0.4)';
+          ctx.beginPath();
+          ctx.arc(x + 10 + Math.random() * (brickW - 20), y + brickH - 8, 6 + Math.random() * 10, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
     }
@@ -67,35 +72,38 @@ export class ProceduralTextures {
     canvas.height = 512;
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = '#121418';
+    // Dark catacomb earth base
+    ctx.fillStyle = '#0a0c10';
     ctx.fillRect(0, 0, 512, 512);
 
     const tileSize = 128;
     for (let x = 0; x < 512; x += tileSize) {
       for (let y = 0; y < 512; y += tileSize) {
-        ctx.fillStyle = (x / tileSize + y / tileSize) % 2 === 0 ? '#1a1d24' : '#15171e';
+        const alt = (x / tileSize + y / tileSize) % 2 === 0;
+        ctx.fillStyle = alt ? '#14171f' : '#11131a';
         ctx.fillRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
 
-        // Flagstone inner border
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+        // Flagstone inner border mortar
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.lineWidth = 3;
         ctx.strokeRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
 
-        // Cracks & weathering
-        if (Math.random() > 0.3) {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-          ctx.lineWidth = 1;
+        // Ancient floor stone cracks & fractures
+        if (Math.random() > 0.25) {
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.moveTo(x + 20, y + 20);
-          ctx.lineTo(x + 50 + Math.random() * 30, y + 40 + Math.random() * 30);
+          ctx.moveTo(x + 15, y + 15);
+          ctx.lineTo(x + 45 + Math.random() * 40, y + 35 + Math.random() * 40);
+          ctx.lineTo(x + 75 + Math.random() * 30, y + 85 + Math.random() * 20);
           ctx.stroke();
         }
 
-        // Moss / puddle stains
-        if (Math.random() > 0.4) {
-          ctx.fillStyle = 'rgba(20, 45, 25, 0.3)';
+        // Moisture stains & catacomb dampness
+        if (Math.random() > 0.35) {
+          ctx.fillStyle = 'rgba(15, 38, 22, 0.35)';
           ctx.beginPath();
-          ctx.arc(x + 40 + Math.random() * 40, y + 40 + Math.random() * 40, 18 + Math.random() * 20, 0, Math.PI * 2);
+          ctx.arc(x + 30 + Math.random() * 60, y + 30 + Math.random() * 60, 16 + Math.random() * 24, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -113,11 +121,10 @@ export class ProceduralTextures {
     canvas.height = 256;
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = '#4a2c11';
+    ctx.fillStyle = '#3a220d';
     ctx.fillRect(0, 0, 256, 256);
 
-    // Wood grain lines
-    ctx.strokeStyle = '#321b07';
+    ctx.strokeStyle = '#221306';
     ctx.lineWidth = 2;
     for (let i = 0; i < 256; i += 6) {
       ctx.beginPath();

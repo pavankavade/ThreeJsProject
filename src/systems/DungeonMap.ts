@@ -99,6 +99,7 @@ export class DungeonMap {
     this.createInstancedMeshes(wallCount, floorCount);
     this.spawnWallTorches();
     this.spawnCeilingLights();
+    this.spawnCryptProps();
     this.spawnExitPortal();
   }
 
@@ -356,5 +357,121 @@ export class DungeonMap {
       }
     }
     return false;
+  }
+
+  private spawnCryptProps(): void {
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x2e323b, roughness: 0.8, metalness: 0.2 });
+    const lidMat = new THREE.MeshStandardMaterial({ color: 0x3d424e, roughness: 0.7, metalness: 0.25 });
+    const boneMat = new THREE.MeshStandardMaterial({ color: 0xddccaa, roughness: 0.65, metalness: 0.05 });
+    const ironMat = new THREE.MeshStandardMaterial({ color: 0x22242b, metalness: 0.85, roughness: 0.3 });
+
+    for (let r = 1; r < this.gridHeight - 1; r++) {
+      for (let c = 1; c < this.gridWidth - 1; c++) {
+        if (this.grid[r][c] !== 'W') {
+          const x = c * DungeonMap.TILE_SIZE;
+          const z = r * DungeonMap.TILE_SIZE;
+
+          // 1. Spawn Ancient Stone Sarcophagus along alcoves
+          if (r % 3 === 0 && c % 3 === 0) {
+            let alignRot = 0;
+            let offset = new THREE.Vector3(0, 0, 0);
+            let hasWall = false;
+
+            if (this.grid[r - 1][c] === 'W') { alignRot = 0; offset.set(0, 0, -0.9); hasWall = true; }
+            else if (this.grid[r + 1][c] === 'W') { alignRot = Math.PI; offset.set(0, 0, 0.9); hasWall = true; }
+            else if (this.grid[r][c - 1] === 'W') { alignRot = Math.PI / 2; offset.set(-0.9, 0, 0); hasWall = true; }
+            else if (this.grid[r][c + 1] === 'W') { alignRot = -Math.PI / 2; offset.set(0.9, 0, 0); hasWall = true; }
+
+            if (hasWall) {
+              const sarcGroup = new THREE.Group();
+              sarcGroup.position.set(x + offset.x, 0, z + offset.z);
+              sarcGroup.rotation.y = alignRot;
+
+              // Sarcophagus Base Box
+              const baseBox = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.55, 1.7), stoneMat);
+              baseBox.position.set(0, 0.275, 0);
+              baseBox.castShadow = true;
+
+              // Carved Stone Lid with Beveled Relief
+              const lidBox = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.14, 1.8), lidMat);
+              lidBox.position.set(0, 0.62, 0);
+              lidBox.rotation.z = Math.random() > 0.5 ? 0.04 : 0;
+              lidBox.castShadow = true;
+
+              // Cross emblem on lid
+              const crossMat = new THREE.MeshStandardMaterial({ color: 0x555b6a, metalness: 0.5, roughness: 0.5 });
+              const vRelief = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, 0.9), crossMat);
+              vRelief.position.set(0, 0.70, 0);
+              const hRelief = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.03, 0.08), crossMat);
+              hRelief.position.set(0, 0.70, 0.2);
+
+              sarcGroup.add(baseBox, lidBox, vRelief, hRelief);
+              this.scene.add(sarcGroup);
+            }
+          }
+
+          // 2. Spawn Catacomb Skulls & Ribcages in floor corners
+          if ((r + c) % 5 === 0 && Math.random() > 0.3) {
+            const boneGroup = new THREE.Group();
+            boneGroup.position.set(x + (Math.random() - 0.5) * 1.2, 0, z + (Math.random() - 0.5) * 1.2);
+
+            // Skull geometry
+            const skullHead = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), boneMat);
+            skullHead.position.set(0, 0.09, 0);
+            const skullJaw = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.07), boneMat);
+            skullJaw.position.set(0, 0.04, 0.03);
+            boneGroup.add(skullHead, skullJaw);
+
+            // Scattered femur bones
+            for (let b = 0; b < 3; b++) {
+              const boneMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 6), boneMat);
+              boneMesh.position.set((Math.random() - 0.5) * 0.3, 0.02, (Math.random() - 0.5) * 0.3);
+              boneMesh.rotation.set(Math.PI / 2, Math.random() * Math.PI, Math.random() * Math.PI);
+              boneGroup.add(boneMesh);
+            }
+
+            this.scene.add(boneGroup);
+          }
+
+          // 3. Spawn Fluted Crypt Pillars at corridor corners
+          if (r % 4 === 0 && c % 4 === 0) {
+            const pillarGroup = new THREE.Group();
+            pillarGroup.position.set(x, 0, z);
+
+            // Square Plinth Base
+            const basePlinth = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.28, 0.6), stoneMat);
+            basePlinth.position.set(0, 0.14, 0);
+
+            // Fluted Shaft Column
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, DungeonMap.WALL_HEIGHT - 0.56, 12), stoneMat);
+            shaft.position.set(0, DungeonMap.WALL_HEIGHT / 2, 0);
+
+            // Carved Capital Top
+            const capitalTop = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.28, 0.6), stoneMat);
+            capitalTop.position.set(0, DungeonMap.WALL_HEIGHT - 0.14, 0);
+
+            pillarGroup.add(basePlinth, shaft, capitalTop);
+            this.scene.add(pillarGroup);
+          }
+
+          // 4. Spawn Hanging Spiked Cages from Ceiling
+          if (r % 7 === 0 && c % 7 === 0) {
+            const cageGroup = new THREE.Group();
+            cageGroup.position.set(x, DungeonMap.WALL_HEIGHT, z);
+
+            // Hanging Iron Chain
+            const chainMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 1.2, 6), ironMat);
+            chainMesh.position.set(0, -0.6, 0);
+
+            // Spiked Iron Cage Frame
+            const cageBody = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.85, 8, 1, true), ironMat);
+            cageBody.position.set(0, -1.6, 0);
+
+            cageGroup.add(chainMesh, cageBody);
+            this.scene.add(cageGroup);
+          }
+        }
+      }
+    }
   }
 }
