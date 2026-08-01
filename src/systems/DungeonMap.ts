@@ -32,27 +32,24 @@ export class DungeonMap {
   private ceilingInstancedMesh!: THREE.InstancedMesh;
   private torches: TorchLight[] = [];
 
-  // 2x2 Modular Crypt Map Layout (Each section is 24m x 24m, total 48m x 48m world area!)
-  // Section (0,0): Entrance & Grand Tomb (Top Left)
-  // Section (1,0): Armory & Treasury Vault (Top Right)
-  // Section (0,1): Charnel Pillar Catacombs (Bottom Left)
-  // Section (1,1): Sanctuary Altar & Exit Portal (Bottom Right)
+  // Artistic Interconnected 2x2 Modular Crypt Layout (48m x 48m)
+  // Features: Octagonal chamber cutouts, central crypt rotunda hub, 4-way interconnected corridors, alcove nooks!
   private defaultMapLayout = [
     "WWWWWWWWWWWWWWWW",
-    "W..P...W.......W",
-    "W......W...C...W",
-    "W..S...W.......W",
-    "W......W...S...W",
-    "W......W.......W",
-    "W......W...C...W",
-    "WWW..WWWWWW..WWW",
-    "WWW..WWWWWW..WWW",
-    "W......W.......W",
-    "W..S...W.......W",
-    "W......W...S...W",
-    "W......W.......W",
-    "W..S...W...C...W",
-    "W......W.....X.W",
+    "WWW.P....W.C.WWW",
+    "WW.......W....WW",
+    "W..W...W...W...W",
+    "W......S.......W",
+    "W..W...W...W...W",
+    "WW...WW.WW...WWW",
+    "W..............W",
+    "W..............W",
+    "WW...WW.WW...WWW",
+    "W..W...W...W...W",
+    "W..S.......S...W",
+    "W..W...W...W...W",
+    "WW....WW......WW",
+    "WWW.C....W...XWWW",
     "WWWWWWWWWWWWWWWW"
   ];
 
@@ -100,6 +97,7 @@ export class DungeonMap {
     this.spawnWallTorches();
     this.spawnCeilingLights();
     this.spawnCryptProps();
+    this.spawnCentralRotunda();
     this.spawnExitPortal();
   }
 
@@ -173,6 +171,44 @@ export class DungeonMap {
     this.scene.add(this.wallInstancedMesh);
     this.scene.add(this.floorInstancedMesh);
     this.scene.add(this.ceilingInstancedMesh);
+  }
+
+  private spawnCentralRotunda(): void {
+    // Grand Central Crypt Rotunda Hub centered at (22.5m, 22.5m)
+    const rotundaGroup = new THREE.Group();
+    rotundaGroup.position.set(22.5, 0, 22.5);
+
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x2b2f38, roughness: 0.75, metalness: 0.25 });
+    const poolMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.1, metalness: 0.8, transparent: true, opacity: 0.7 });
+    const boneMat = new THREE.MeshStandardMaterial({ color: 0xddccaa, roughness: 0.65 });
+
+    // Octagonal Basin Pedestal
+    const basinBase = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.7, 0.4, 8), stoneMat);
+    basinBase.position.set(0, 0.2, 0);
+
+    // Glowing Ethereal Water Pool
+    const poolMesh = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 0.1, 16), poolMat);
+    poolMesh.position.set(0, 0.38, 0);
+
+    // Central Pillar Obelisk
+    const obelisk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 3.8, 8), stoneMat);
+    obelisk.position.set(0, 2.1, 0);
+
+    // Floating Skull Orbs
+    for (let i = 0; i < 4; i++) {
+      const angle = (i * Math.PI) / 2;
+      const skull = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), boneMat);
+      skull.position.set(Math.cos(angle) * 1.5, 1.2, Math.sin(angle) * 1.5);
+      rotundaGroup.add(skull);
+    }
+
+    rotundaGroup.add(basinBase, poolMesh, obelisk);
+    this.scene.add(rotundaGroup);
+
+    // Glowing Blue Ethereal Light
+    const rotundaLight = new THREE.PointLight(0x00d9ff, 5.0, 22, 1.1);
+    rotundaLight.position.set(22.5, 2.5, 22.5);
+    this.scene.add(rotundaLight);
   }
 
   private spawnExitPortal(): void {
